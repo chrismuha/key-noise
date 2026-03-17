@@ -1,0 +1,28 @@
+{
+  "name": "docx-filler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desktop DOCX filler built with Electron.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "concurrently \"vite --strictPort --port 5173\" \"wait-on tcp:5173 && env -u ELECTRON_RUN_AS_NODE electron .\"",
+    "build": "vite build",
+    "start": "env -u ELECTRON_RUN_AS_NODE electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "pizzip": "^3.2.0",
+    "vue": "^3.5.13",
+    "xmldom": "^0.6.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "concurrently": "^9.1.2",
+    "electron": "^35.0.1",
+    "vite": "^6.2.0",
+    "wait-on": "^8.0.3"
+  }
+}
