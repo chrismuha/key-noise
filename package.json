@@ -1,17 +1,42 @@
 {
   "name": "docx-filler",
+  "productName": "DOCX Filler",
   "version": "1.0.0",
   "private": true,
   "description": "Desktop DOCX filler built with Electron.",
   "main": "main.js",
   "scripts": {
-    "dev": "concurrently \"vite --strictPort --port 5173\" \"wait-on tcp:5173 && env -u ELECTRON_RUN_AS_NODE electron .\"",
-    "build": "vite build",
-    "start": "env -u ELECTRON_RUN_AS_NODE electron ."
+    "start": "npx concurrently -k \"npm run dev:renderer\" \"npx wait-on http://localhost:5173 && npm run dev:main\"",
+    "start:prod": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=production electron .",
+    "dev": "npx concurrently -k \"npm run dev:renderer\" \"npx wait-on http://localhost:5173 && npm run dev:main\"",
+    "dev:renderer": "vite --strictPort --port 5173",
+    "dev:main": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron .",
+    "build": "npm run dist",
+    "build:web": "vite build",
+    "dist": "npm run dist:mac:universal",
+    "dist:mac:x64": "npm run generate-icons && npm run build:web && electron-builder --mac --x64",
+    "dist:mac:arm64": "npm run generate-icons && npm run build:web && electron-builder --mac --arm64",
+    "dist:mac:universal": "npm run generate-icons && npm run build:web && electron-builder --mac --universal",
+    "build:mac:x64": "npm run dist:mac:x64",
+    "build:mac:arm64": "npm run dist:mac:arm64",
+    "build:mac:universal": "npm run dist:mac:universal",
+    "dist:win": "npm run generate-icons && npm run build:web && electron-builder --win",
+    "dist:linux": "npm run build:web && electron-builder --linux",
+    "build:win": "npm run dist:win",
+    "build:linux": "npm run dist:linux",
+    "package": "echo \"electron-forge package is not configured for docx-filler\"",
+    "make": "echo \"electron-forge make is not configured for docx-filler\"",
+    "publish": "echo \"electron-forge publish is not configured for docx-filler\"",
+    "lint": "echo \"No linting configured\"",
+    "generate-icons": "echo \"No icon generation configured\"",
+    "all": "echo \"Shared all-script is not configured for docx-filler\"",
+    "scripts": "echo \"Shared scripts runner is not configured for docx-filler\""
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Chris Muha"
+  },
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "pizzip": "^3.2.0",
@@ -22,6 +47,7 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "concurrently": "^9.1.2",
     "electron": "^35.0.1",
+    "electron-builder": "^26.0.12",
     "vite": "^6.2.0",
     "wait-on": "^8.0.3"
   }
