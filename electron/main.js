@@ -17,8 +17,8 @@ function createWindow() {
     }
   });
 
-  if (!app.isPackaged) {
-    mainWindow.loadURL('http://localhost:5173');
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
