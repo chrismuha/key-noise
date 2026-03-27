@@ -13,7 +13,7 @@
     "dev:main": "electron .",
     "build": "npm run dist",
     "build:web": "vite build",
-    "dist": "npm run dist:mac:universal",
+  "dist": "node ../_shared/run-electron-dist.mjs mac:universal",
     "dist:mac:x64": "npm run generate-icons && npm run build:web && electron-builder --mac --x64",
     "dist:mac:arm64": "npm run generate-icons && npm run build:web && electron-builder --mac --arm64",
     "dist:mac:universal": "npm run generate-icons && npm run build:web && electron-builder --mac --universal",
