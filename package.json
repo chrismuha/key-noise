@@ -34,8 +34,8 @@
     "postinstall": "node ../_shared/repair.mjs",
     "lint": "echo \"No linting configured\"",
     "generate-icons": "echo \"No icon generation configured\"",
-    "all": "echo \"Shared all-script is not configured for docx-filler\"",
-    "scripts": "echo \"Shared scripts runner is not configured for docx-filler\""
+    "all": "bash ../../../SCRIPTS/script-set-1/run-all.sh",
+    "scripts": "bash ../../../SCRIPTS/script-set-1/run-all.sh"
   },
   "keywords": [],
   "author": {
