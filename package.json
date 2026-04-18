@@ -13,7 +13,7 @@
     "predev": "node ../_shared/repair.mjs",
     "dev": "node ../_shared/vite-electron-dev.mjs --port 5176",
     "dev:renderer": "vite dev --host 127.0.0.1 --port 5176",
-    "dev:main": "electron .",
+    "dev:main": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron . --disable-cache",
     "build": "npm run dist",
     "build:web": "vite build",
     "prebuild": "node ../_shared/repair.mjs",
