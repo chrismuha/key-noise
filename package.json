@@ -44,8 +44,32 @@
   "license": "MIT",
   "type": "commonjs",
   "build": {
+    "appId": "com.mcr.docxfiller",
+    "productName": "DOCX Filler",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "src/**/*",
+      "build/**/*",
+      "main.js",
+      "package.json"
+    ],
     "mac": {
-      "artifactName": "docx-filler-${version}.dmg"
+      "artifactName": "docx-filler-${version}.dmg",
+      "category": "public.app-category.utilities",
+      "icon": "build/icon.icns",
+      "identity": null
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png"
     },
     "portable": {
       "artifactName": "docx-filler-${version}.exe"

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="page" x1="346" y1="180" x2="716" y2="784" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e6e8ee"/>
+    </linearGradient>
+    <filter id="documentShadow" x="220" y="120" width="584" height="760" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="42" stdDeviation="44" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+    <filter id="blueGlow" x="250" y="290" width="524" height="480" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#246bfe" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="220" fill="#111111"/>
+  <g filter="url(#documentShadow)">
+    <path d="M314 148h272l124 124v604H314z" fill="url(#page)"/>
+    <path d="M586 148v124h124z" fill="#cfd6e6"/>
+    <path d="M586 148v124h124" fill="none" stroke="#b6bfd2" stroke-width="10" stroke-linejoin="round"/>
+    <rect x="314" y="148" width="396" height="728" rx="46" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="12"/>
+  </g>
+  <g filter="url(#blueGlow)" fill="#246bfe">
+    <rect x="384" y="438" width="256" height="42" rx="21"/>
+    <rect x="384" y="536" width="256" height="42" rx="21"/>
+    <rect x="384" y="634" width="184" height="42" rx="21"/>
+  </g>
+</svg>

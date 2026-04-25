@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const PizZip = require('pizzip');
@@ -7,9 +7,31 @@ const { DOMParser, XMLSerializer } = require('xmldom');
 let mainWindow;
 let splashWindow = null;
 let splashShownAt = 0;
+let mainWindowRevealed = false;
+
+function getAppIconPath() {
+  const iconFileNameByPlatform = {
+    darwin: 'icon.icns',
+    win32: 'icon.ico',
+    linux: 'icon.png'
+  };
+
+  return path.join(app.getAppPath(), 'build', iconFileNameByPlatform[process.platform] || 'icon.png');
+}
+
+function getDockIconImage() {
+  const image = nativeImage.createFromPath(path.join(app.getAppPath(), 'build', 'icon.png'));
+  return image.isEmpty() ? undefined : image;
+}
+
+function getSplashIconDataUrl() {
+  const iconPath = path.join(app.getAppPath(), 'build', 'icon.png');
+  const image = nativeImage.createFromPath(iconPath);
+  return image.isEmpty() ? '' : image.toDataURL();
+}
 
 function getSplashDelay() {
-  const minimumVisibleDuration = 1800;
+  const minimumVisibleDuration = 5000;
   const elapsed = Date.now() - splashShownAt;
 
   return Math.max(0, minimumVisibleDuration - elapsed);
@@ -34,6 +56,7 @@ function createSplashWindow() {
   if (splashWindow && !splashWindow.isDestroyed()) return splashWindow;
 
   splashShownAt = Date.now();
+  const appIconPath = getAppIconPath();
   const splash = new BrowserWindow({
     width: 440,
     height: 300,
@@ -47,11 +70,13 @@ function createSplashWindow() {
     show: false,
     center: true,
     backgroundColor: '#111111',
+    ...(fs.existsSync(appIconPath) ? { icon: appIconPath } : {}),
     webPreferences: {
       sandbox: true
     }
   });
 
+  const splashIconDataUrl = getSplashIconDataUrl();
   const splashHtml = `
     <!doctype html>
     <html>
@@ -84,41 +109,12 @@ function createSplashWindow() {
             height: 104px;
             display: grid;
             place-items: center;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 28px;
-            background:
-              linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03)),
-              #2d2d2f;
-            box-shadow: 0 22px 42px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.12);
+            filter: drop-shadow(0 22px 28px rgba(0,0,0,0.34));
           }
-          .document {
-            width: 48px;
-            height: 62px;
-            position: relative;
-            border-radius: 8px;
-            background: #f5f5f6;
-            box-shadow: 0 10px 22px rgba(0,0,0,0.28);
-          }
-          .document::before {
-            content: "";
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 17px;
-            height: 17px;
-            border-radius: 0 8px 0 5px;
-            background: linear-gradient(135deg, #cfd1d5 0 50%, #2d2d2f 51% 100%);
-          }
-          .document::after {
-            content: "";
-            position: absolute;
-            left: 10px;
-            top: 21px;
-            width: 28px;
-            height: 25px;
-            border-top: 4px solid #246bfe;
-            border-bottom: 4px solid #246bfe;
-            box-shadow: 0 10px 0 #246bfe;
+          .document-icon {
+            display: block;
+            width: 104px;
+            height: 104px;
           }
           h1 {
             margin: 0;
@@ -159,7 +155,7 @@ function createSplashWindow() {
       <body>
         <div class="splash">
           <div class="mark" aria-hidden="true">
-            <div class="document"></div>
+            <img class="document-icon" src="${splashIconDataUrl}" alt="" />
           </div>
           <h1>DOCX Filler</h1>
           <p>Preparing document tools...</p>
@@ -181,12 +177,28 @@ function createSplashWindow() {
   return splash;
 }
 
+function revealMainWindow() {
+  if (mainWindowRevealed) return;
+  mainWindowRevealed = true;
+
+  const delay = splashWindow ? getSplashDelay() : 0;
+  setTimeout(() => {
+    closeSplashWindow(true);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+    }
+  }, delay);
+}
+
 function createWindow() {
+  mainWindowRevealed = false;
+  const appIconPath = getAppIconPath();
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 800,
     backgroundColor: '#111111',
     show: false,
+    ...(fs.existsSync(appIconPath) ? { icon: appIconPath } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -194,36 +206,34 @@ function createWindow() {
     }
   });
 
+  const rendererReadyHandler = (event) => {
+    if (mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents) {
+      revealMainWindow();
+    }
+  };
+
+  ipcMain.on('docx-filler:renderer-ready', rendererReadyHandler);
+
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  mainWindow.once('ready-to-show', () => {
-    const reveal = () => {
-      closeSplashWindow(true);
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.show();
-      }
-    };
-    const delay = splashWindow ? getSplashDelay() : 0;
-    setTimeout(reveal, delay);
-  });
-
-  mainWindow.webContents.once('did-fail-load', () => {
-    closeSplashWindow(true);
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.show();
-    }
-  });
+  mainWindow.webContents.once('did-fail-load', revealMainWindow);
 
   mainWindow.on('closed', () => {
+    ipcMain.removeListener('docx-filler:renderer-ready', rendererReadyHandler);
     mainWindow = null;
   });
 }
 
 app.whenReady().then(() => {
+  const appIcon = getDockIconImage();
+  if (process.platform === 'darwin' && appIcon && app.dock) {
+    app.dock.setIcon(appIcon);
+  }
+
   createSplashWindow();
   createWindow();
 });
