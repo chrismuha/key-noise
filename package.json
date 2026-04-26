@@ -14,26 +14,30 @@
     "dev": "node ../_shared/vite-electron-dev.mjs --port 5176",
     "dev:renderer": "vite dev --host 127.0.0.1 --port 5176",
     "dev:main": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron . --disable-cache",
+    "prebuild": "node ../_shared/repair.mjs",
     "build": "npm run dist",
     "build:web": "vite build",
-    "prebuild": "node ../_shared/repair.mjs",
-  "dist": "node ../_shared/run-electron-dist.mjs mac:universal",
-    "dist:mac:x64": "npm run generate-icons && npm run build:web && electron-builder --mac --x64",
-    "dist:mac:arm64": "npm run generate-icons && npm run build:web && electron-builder --mac --arm64",
-    "dist:mac:universal": "npm run generate-icons && npm run build:web && electron-builder --mac --universal",
+    "dist": "node ../_shared/run-electron-dist.mjs mac:universal",
+    "dist:mac:x64": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --mac --x64 --config electron-builder-mac-x64.json",
+    "dist:mac:arm64": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --mac --arm64 --config electron-builder-mac-arm64.json",
+    "dist:mac:universal": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --mac --universal --config electron-builder-mac-universal.json",
     "build:mac:x64": "npm run dist:mac:x64",
     "build:mac:arm64": "npm run dist:mac:arm64",
     "build:mac:universal": "npm run dist:mac:universal",
-    "dist:win": "npm run generate-icons && npm run build:web && electron-builder --win",
-    "dist:linux": "npm run build:web && electron-builder --linux",
+    "dist:win": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --win --config electron-builder.base.json",
+    "dist:linux": "npm run build:web && node ./scripts/electron-builder-filter.mjs --linux --config electron-builder.base.json",
     "build:win": "npm run dist:win",
     "build:linux": "npm run dist:linux",
-    "package": "echo \"electron-forge package is not configured for docx-filler\"",
-    "make": "echo \"electron-forge make is not configured for docx-filler\"",
-    "publish": "echo \"electron-forge publish is not configured for docx-filler\"",
+    "predist": "node ../_shared/repair.mjs",
+    "package": "npm run build:web && electron-forge package",
+    "prepackage": "node ../_shared/repair.mjs",
+    "make": "npm run build:web && electron-forge make",
+    "premake": "node ../_shared/repair.mjs",
+    "publish": "npm run build:web && electron-forge publish",
+    "prepublish": "node ../_shared/repair.mjs",
     "postinstall": "node ../_shared/repair.mjs",
     "lint": "echo \"No linting configured\"",
-    "generate-icons": "echo \"No icon generation configured\"",
+    "generate-icons": "node ./scripts/generate-macos-icon.mjs",
     "all": "bash ../../../SCRIPTS/script-set-1/run-all.sh",
     "scripts": "bash ../../../SCRIPTS/script-set-1/run-all.sh"
   },
@@ -44,32 +48,8 @@
   "license": "MIT",
   "type": "commonjs",
   "build": {
-    "appId": "com.mcr.docxfiller",
-    "productName": "DOCX Filler",
-    "directories": {
-      "buildResources": "build"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "src/**/*",
-      "build/**/*",
-      "main.js",
-      "package.json"
-    ],
     "mac": {
-      "artifactName": "docx-filler-${version}.dmg",
-      "category": "public.app-category.utilities",
-      "icon": "build/icon.icns",
-      "identity": null
-    },
-    "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "build/icon.png"
+      "artifactName": "docx-filler-${version}.dmg"
     },
     "portable": {
       "artifactName": "docx-filler-${version}.exe"
@@ -81,6 +61,14 @@
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/maker-deb": "^7.10.2",
+    "@electron-forge/maker-dmg": "^7.10.2",
+    "@electron-forge/maker-rpm": "^7.10.2",
+    "@electron-forge/maker-squirrel": "^7.10.2",
+    "@electron-forge/maker-zip": "^7.10.2",
+    "@electron-forge/plugin-fuses": "^7.10.2",
+    "@electron/fuses": "^1.8.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
