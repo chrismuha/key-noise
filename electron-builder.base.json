@@ -1,6 +1,6 @@
 {
-  "appId": "com.mcr.docxfiller",
-  "productName": "DOCX Filler",
+  "appId": "com.mcr.keynoise",
+  "productName": "Key Noise",
   "directories": {
     "buildResources": "build",
     "output": "release"

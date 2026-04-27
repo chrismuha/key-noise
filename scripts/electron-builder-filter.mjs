@@ -4,7 +4,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { fixElectronBuilderDep0190 } from "../../_shared/fix-electron-builder-dep0190.mjs";
+import { fixElectronBuilderDep0190 } from "../../../../PRACTICE SOFTWARE SUITE/_shared/fix-electron-builder-dep0190.mjs";
 
 const suppressedPatterns = [
   "duplicate dependency references",
@@ -52,7 +52,7 @@ if (fixElectronBuilderDep0190(projectRoot)) {
   process.stdout.write("  • patched electron-builder to avoid Node DEP0190\n");
 }
 const projectOutputDir = path.resolve(projectRoot, "release");
-const tempOutputDir = path.join("/private", "tmp", "docx-filler-electron-builder-output");
+const tempOutputDir = path.join("/private", "tmp", "key-noise-electron-builder-output");
 const rawUserArgs = process.argv.slice(2);
 const ignoredArgs = rawUserArgs.filter((arg) => !arg.startsWith("-") && arg.includes(":"));
 const userArgs = rawUserArgs.filter((arg) => !ignoredArgs.includes(arg));

@@ -1,94 +1,189 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
-const templatePath = ref('');
-const sections = ref([]);
-const formData = ref({});
-const status = ref('');
-const isSaving = ref(false);
+const maxSoundSlots = 64;
+const supportedAudioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
+const keys = [
+  'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+  'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Space'
+];
 
-async function chooseTemplate() {
-  status.value = '';
-  const result = await window.templateApi.selectTemplate();
+const volume = ref(0.85);
+const lastKey = ref('');
+const lastSound = ref('');
+const loadedSounds = ref(new Set());
+const missingSounds = ref(new Set());
+const isArmed = ref(false);
 
-  if (result.canceled) return;
+const keyBindings = computed(() => keys.map((key, index) => ({
+  key,
+  soundNumber: index + 1,
+  fileName: `sound${index + 1}.mp3`
+})));
 
-  templatePath.value = result.filePath;
-  sections.value = result.sections || [];
-
-  const next = {};
-  for (const section of sections.value) {
-    next[section.label] = '';
+const loadedCount = computed(() => loadedSounds.value.size);
+const statusText = computed(() => {
+  if (loadedCount.value > 0) {
+    return `${loadedCount.value} sound${loadedCount.value === 1 ? '' : 's'} ready`;
   }
-  formData.value = next;
 
-  if (result.error) {
-    status.value = result.error;
-    return;
-  }
+  return 'Add files named sound1.mp3, sound2.mp3, and onward in public/sounds';
+});
 
-  if (!sections.value.length) {
-    status.value = 'No section headings ending with ":" were found.';
+function getKeyName(event) {
+  if (event.code === 'Space') return 'Space';
+
+  const key = event.key.toUpperCase();
+  return /^[A-Z]$/.test(key) ? key : '';
+}
+
+function buildSoundSources(soundNumber) {
+  return supportedAudioExtensions.map((extension) => ({
+    extension,
+    url: `./sounds/sound${soundNumber}.${extension}`
+  }));
+}
+
+function refreshReactiveSet(targetSet, value) {
+  targetSet.value = new Set(targetSet.value).add(value);
+}
+
+async function audioExists(url) {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 
-async function generateDoc() {
-  if (!templatePath.value) {
-    status.value = 'Choose a template first.';
-    return;
+async function scanSounds() {
+  const found = new Set();
+  const missing = new Set();
+
+  for (let soundNumber = 1; soundNumber <= maxSoundSlots; soundNumber += 1) {
+    const sources = buildSoundSources(soundNumber);
+    let hasSound = false;
+
+    for (const source of sources) {
+      if (await audioExists(source.url)) {
+        hasSound = true;
+        break;
+      }
+    }
+
+    if (hasSound) {
+      found.add(soundNumber);
+    } else {
+      missing.add(soundNumber);
+    }
   }
 
-  isSaving.value = true;
-  status.value = '';
-
-  const result = await window.templateApi.generateFilledDocx({
-    templatePath: templatePath.value,
-    valuesByLabel: formData.value
-  });
-
-  isSaving.value = false;
-
-  if (result.canceled) return;
-  if (result.error) {
-    status.value = `Error: ${result.error}`;
-    return;
-  }
-
-  status.value = `Saved: ${result.savedTo}`;
+  loadedSounds.value = found;
+  missingSounds.value = missing;
 }
+
+async function playSound(soundNumber) {
+  const sources = buildSoundSources(soundNumber);
+
+  for (const source of sources) {
+    if (!loadedSounds.value.has(soundNumber) && !(await audioExists(source.url))) {
+      continue;
+    }
+
+    const audio = new Audio(source.url);
+    audio.volume = volume.value;
+
+    try {
+      await audio.play();
+      refreshReactiveSet(loadedSounds, soundNumber);
+      missingSounds.value.delete(soundNumber);
+      lastSound.value = `sound${soundNumber}.${source.extension}`;
+      return;
+    } catch {
+      refreshReactiveSet(missingSounds, soundNumber);
+    }
+  }
+
+  lastSound.value = `Missing sound${soundNumber}.mp3`;
+}
+
+function handleKeydown(event) {
+  if (event.repeat) return;
+
+  const keyName = getKeyName(event);
+  const binding = keyBindings.value.find((item) => item.key === keyName);
+
+  if (!binding) return;
+
+  event.preventDefault();
+  isArmed.value = true;
+  lastKey.value = keyName;
+  playSound(binding.soundNumber);
+}
+
+function handleKeyup(event) {
+  if (getKeyName(event)) {
+    isArmed.value = false;
+  }
+}
+
+onMounted(() => {
+  scanSounds();
+  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('keyup', handleKeyup);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('keyup', handleKeyup);
+});
 </script>
 
 <template>
-  <div class="app">
-    <div class="card">
-      <h1>DOCX Filler</h1>
-      <p>Load a Word template, detect heading sections, type into boxes, and save a filled DOCX.</p>
-
-      <div class="actions">
-        <button @click="chooseTemplate">Open Template</button>
-        <button @click="generateDoc" :disabled="!sections.length || isSaving">
-          {{ isSaving ? 'Saving...' : 'Generate DOCX' }}
-        </button>
+  <main class="app">
+    <section class="stage" :class="{ active: isArmed }" tabindex="0">
+      <div class="meter" aria-hidden="true">
+        <span v-for="bar in 18" :key="bar" />
       </div>
 
-      <div class="path">
-        <strong>Template:</strong> {{ templatePath || 'None selected' }}
+      <div class="headline">
+        <p class="eyebrow">{{ statusText }}</p>
+        <h1>Key Noise</h1>
+        <p class="subtitle">
+          Press a mapped key and the app plays the matching numbered sound file.
+        </p>
       </div>
 
-      <div v-if="status" class="status">{{ status }}</div>
-    </div>
-
-    <div class="card" v-if="sections.length">
-      <h2>Detected Sections</h2>
-
-      <div class="field" v-for="section in sections" :key="section.id">
-        <label>{{ section.label }}</label>
-        <textarea
-          v-model="formData[section.label]"
-          rows="5"
-          :placeholder="`Type text for: ${section.label}`"
-        />
+      <div class="readout">
+        <div>
+          <span>Key</span>
+          <strong>{{ lastKey || '-' }}</strong>
+        </div>
+        <div>
+          <span>Sound</span>
+          <strong>{{ lastSound || 'Ready' }}</strong>
+        </div>
+        <label class="volume">
+          <span>Volume</span>
+          <input v-model.number="volume" type="range" min="0" max="1" step="0.01" />
+        </label>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <section class="bindings" aria-label="Key bindings">
+      <button
+        v-for="binding in keyBindings"
+        :key="binding.key"
+        type="button"
+        class="key"
+        :class="{ loaded: loadedSounds.has(binding.soundNumber), missing: missingSounds.has(binding.soundNumber) }"
+        @click="playSound(binding.soundNumber)"
+      >
+        <span>{{ binding.key }}</span>
+        <small>{{ binding.fileName }}</small>
+      </button>
+    </section>
+  </main>
 </template>

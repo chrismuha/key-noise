@@ -5,5 +5,5 @@ import './style.css';
 createApp(App).mount('#app');
 
 requestAnimationFrame(() => {
-  window.templateApi?.appReady?.();
+  window.keyNoiseApi?.appReady?.();
 });

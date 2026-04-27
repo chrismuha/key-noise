@@ -1,23 +1,23 @@
 {
-  "name": "docx-filler",
-  "productName": "DOCX Filler",
+  "name": "key-noise",
+  "productName": "Key Noise",
   "version": "1.0.0",
   "private": true,
-  "description": "Desktop DOCX filler built with Electron.",
+  "description": "Desktop keyboard sound app built with Electron.",
   "main": "main.js",
   "scripts": {
-    "prestart": "node ../_shared/repair.mjs",
-    "start": "node ../_shared/vite-electron-dev.mjs --port 5176",
+    "prestart": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
+    "start": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/vite-electron-dev.mjs\" --port 5176",
     "start:fixed": "concurrently \"npm run dev:renderer\" \"cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5176/ npm run dev:main\"",
     "start:prod": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=production electron .",
-    "predev": "node ../_shared/repair.mjs",
-    "dev": "node ../_shared/vite-electron-dev.mjs --port 5176",
+    "predev": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
+    "dev": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/vite-electron-dev.mjs\" --port 5176",
     "dev:renderer": "vite dev --host 127.0.0.1 --port 5176",
     "dev:main": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron . --disable-cache",
-    "prebuild": "node ../_shared/repair.mjs",
+    "prebuild": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
     "build": "npm run dist",
     "build:web": "vite build",
-    "dist": "node ../_shared/run-electron-dist.mjs mac:universal",
+    "dist": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/run-electron-dist.mjs\" mac:universal",
     "dist:mac:x64": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --mac --x64 --config electron-builder-mac-x64.json",
     "dist:mac:arm64": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --mac --arm64 --config electron-builder-mac-arm64.json",
     "dist:mac:universal": "npm run generate-icons && npm run build:web && node ./scripts/electron-builder-filter.mjs --mac --universal --config electron-builder-mac-universal.json",
@@ -28,18 +28,18 @@
     "dist:linux": "npm run build:web && node ./scripts/electron-builder-filter.mjs --linux --config electron-builder.base.json",
     "build:win": "npm run dist:win",
     "build:linux": "npm run dist:linux",
-    "predist": "node ../_shared/repair.mjs",
+    "predist": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
     "package": "npm run build:web && electron-forge package",
-    "prepackage": "node ../_shared/repair.mjs",
+    "prepackage": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
     "make": "npm run build:web && electron-forge make",
-    "premake": "node ../_shared/repair.mjs",
+    "premake": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
     "publish": "npm run build:web && electron-forge publish",
-    "prepublish": "node ../_shared/repair.mjs",
-    "postinstall": "node ../_shared/repair.mjs",
+    "prepublish": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
+    "postinstall": "node \"../../../PRACTICE SOFTWARE SUITE/_shared/repair.mjs\"",
     "lint": "echo \"No linting configured\"",
     "generate-icons": "node ./scripts/generate-macos-icon.mjs",
-    "all": "bash ../../../SCRIPTS/script-set-1/run-all.sh",
-    "scripts": "bash ../../../SCRIPTS/script-set-1/run-all.sh"
+    "all": "bash ../run-all.sh",
+    "scripts": "bash ../run-all.sh"
   },
   "keywords": [],
   "author": {
@@ -49,16 +49,14 @@
   "type": "commonjs",
   "build": {
     "mac": {
-      "artifactName": "docx-filler-${version}.dmg"
+      "artifactName": "key-noise-${version}.dmg"
     },
     "portable": {
-      "artifactName": "docx-filler-${version}.exe"
+      "artifactName": "key-noise-${version}.exe"
     }
   },
   "dependencies": {
-    "pizzip": "^3.2.0",
-    "vue": "^3.5.13",
-    "xmldom": "^0.6.0"
+    "vue": "^3.5.13"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.10.2",
