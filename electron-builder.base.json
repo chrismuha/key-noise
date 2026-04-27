@@ -1,5 +1,5 @@
 {
-  "appId": "com.mcr.key-noise",
+  "appId": "key-noise",
   "productName": "Key Noise",
   "directories": {
     "buildResources": "build",
