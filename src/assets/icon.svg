@@ -1,27 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="page" x1="346" y1="180" x2="716" y2="784" gradientUnits="userSpaceOnUse">
+    <linearGradient id="keyFace" x1="324" y1="230" x2="704" y2="794" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e6e8ee"/>
+      <stop offset="1" stop-color="#dfe3ec"/>
     </linearGradient>
-    <filter id="documentShadow" x="220" y="120" width="584" height="760" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="42" stdDeviation="44" flood-color="#000000" flood-opacity="0.38"/>
+    <linearGradient id="keyEdge" x1="332" y1="276" x2="692" y2="746" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#a9b3c4"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="360" y1="426" x2="664" y2="594" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4eb9ab"/>
+      <stop offset="1" stop-color="#246bfe"/>
+    </linearGradient>
+    <filter id="markShadow" x="96" y="32" width="850" height="976" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="44" stdDeviation="46" flood-color="#000000" flood-opacity="0.42"/>
     </filter>
-    <filter id="blueGlow" x="250" y="290" width="524" height="480" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#246bfe" flood-opacity="0.32"/>
+    <filter id="accentGlow" x="166" y="196" width="708" height="620" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#246bfe" flood-opacity="0.24"/>
     </filter>
   </defs>
 
   <rect width="1024" height="1024" rx="220" fill="#111111"/>
-  <g filter="url(#documentShadow)">
-    <path d="M314 148h272l124 124v604H314z" fill="url(#page)"/>
-    <path d="M586 148v124h124z" fill="#cfd6e6"/>
-    <path d="M586 148v124h124" fill="none" stroke="#b6bfd2" stroke-width="10" stroke-linejoin="round"/>
-    <rect x="314" y="148" width="396" height="728" rx="46" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="12"/>
+  <g filter="url(#markShadow)">
+    <rect x="164" y="108" width="696" height="816" rx="152" fill="url(#keyEdge)"/>
+    <rect x="218" y="148" width="588" height="700" rx="114" fill="url(#keyFace)"/>
+    <rect x="256" y="190" width="512" height="554" rx="80" fill="#f7f9fc" opacity="0.64"/>
   </g>
-  <g filter="url(#blueGlow)" fill="#246bfe">
-    <rect x="384" y="438" width="256" height="42" rx="21"/>
-    <rect x="384" y="536" width="256" height="42" rx="21"/>
-    <rect x="384" y="634" width="184" height="42" rx="21"/>
+
+  <g filter="url(#accentGlow)">
+    <rect x="328" y="404" width="368" height="100" rx="50" fill="url(#accent)"/>
+    <rect x="328" y="548" width="368" height="100" rx="50" fill="url(#accent)"/>
+    <rect x="412" y="282" width="200" height="76" rx="38" fill="#f0c65b"/>
+  </g>
+
+  <g fill="none" stroke="#f0c65b" stroke-linecap="round" stroke-width="34">
+    <path d="M706 358c38 37 61 87 61 142s-23 105-61 142"/>
+    <path d="M784 292c63 54 102 127 102 208s-39 154-102 208"/>
   </g>
 </svg>

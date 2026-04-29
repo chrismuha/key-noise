@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
+const sourceSvg = path.join(root, 'src', 'assets', 'icon.svg');
 const sourcePng = path.join(root, 'build', 'icon.png');
 const iconsetDir = path.join(root, 'build', 'icon.iconset');
 const targetIcns = path.join(root, 'build', 'icon.icns');
@@ -121,6 +122,18 @@ function generateIcns(sourceHash) {
     fs.rmSync(iconsetDir, { recursive: true, force: true });
   }
 }
+
+function renderSourcePng() {
+  if (!fs.existsSync(sourceSvg)) {
+    console.error(`Missing source icon: ${sourceSvg}`);
+    process.exit(1);
+  }
+
+  fs.mkdirSync(path.dirname(sourcePng), { recursive: true });
+  execFileSync('sips', ['-s', 'format', 'png', sourceSvg, '--out', sourcePng], { stdio: 'ignore' });
+}
+
+renderSourcePng();
 
 if (!fs.existsSync(sourcePng)) {
   console.error(`Missing source icon: ${sourcePng}`);

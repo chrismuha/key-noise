@@ -35,7 +35,7 @@ const keyBindings = computed(() => keys.map((key, index) => ({
 })));
 
 const loadedCount = computed(() => loadedSounds.value.size);
-const configuredCustomCount = computed(() => customPads.value.filter((pad) => pad.combo && pad.fileUrl).length);
+const configuredCustomCount = computed(() => customPads.value.filter((pad) => isAllowedCustomCombo(pad.combo) && pad.fileUrl).length);
 const pinnedCustomPads = computed(() => customPads.value.filter((pad) => pad.pinned));
 const statusText = computed(() => {
   const readyCount = loadedCount.value + configuredCustomCount.value;
@@ -90,6 +90,13 @@ function getComboFromEvent(event) {
   if (mainKey) parts.push(mainKey);
 
   return parts.length >= 2 ? parts.join('+') : '';
+}
+
+function isAllowedCustomCombo(combo) {
+  if (!combo) return false;
+
+  const parts = combo.split('+');
+  return !parts.includes('Cmd') && !parts.includes('Ctrl');
 }
 
 function buildSoundSources(soundNumber) {
@@ -292,7 +299,7 @@ function loadCustomPads() {
       const saved = savedPads.find((item) => item && item.id === pad.id) || {};
       return {
         ...pad,
-        combo: typeof saved.combo === 'string' ? saved.combo : '',
+        combo: typeof saved.combo === 'string' && isAllowedCustomCombo(saved.combo) ? saved.combo : '',
         fileName: typeof saved.fileName === 'string' ? saved.fileName : '',
         fileUrl: typeof saved.fileUrl === 'string' ? saved.fileUrl : '',
         pinned: saved.pinned === true
@@ -306,7 +313,7 @@ function loadCustomPads() {
 function startRecordingCombo(padId) {
   recordingPadId.value = padId;
   lastKey.value = `Set combo ${padId}`;
-  lastSound.value = 'Press a key combo';
+  lastSound.value = 'Press an Alt or Shift combo';
 }
 
 async function chooseCustomMp3(pad) {
@@ -351,13 +358,18 @@ function toggleCustomPadPin(pad) {
 function handleRecording(event) {
   if (!recordingPadId.value || event.repeat) return false;
 
-  event.preventDefault();
   const combo = getComboFromEvent(event);
   if (!combo) {
-    lastSound.value = 'Use a combo like Ctrl+Shift+A';
+    event.preventDefault();
+    lastSound.value = 'Use a combo like Alt+Shift+A';
     return true;
   }
 
+  if (!isAllowedCustomCombo(combo)) {
+    return false;
+  }
+
+  event.preventDefault();
   const pad = customPads.value.find((item) => item.id === recordingPadId.value);
   if (pad) {
     pad.combo = combo;
@@ -375,13 +387,17 @@ function handleKeydown(event) {
   if (handleRecording(event)) return;
 
   const combo = getComboFromEvent(event);
-  if (combo) {
+  if (isAllowedCustomCombo(combo)) {
     const customPad = customPads.value.find((pad) => pad.combo === combo);
     if (customPad) {
       event.preventDefault();
       playCustomPad(customPad);
       return;
     }
+  }
+
+  if (combo || event.metaKey || event.ctrlKey || event.altKey) {
+    return;
   }
 
   const keyName = getKeyName(event);
@@ -469,7 +485,6 @@ onBeforeUnmount(() => {
         :key="binding.key"
         type="button"
         class="key"
-        :class="{ loaded: loadedSounds.has(binding.soundNumber), missing: missingSounds.has(binding.soundNumber) }"
         @click="playSound(binding.soundNumber)"
       >
         <span>{{ binding.key }}</span>
@@ -481,7 +496,7 @@ onBeforeUnmount(() => {
         :key="`pinned-${pad.id}`"
         type="button"
         class="key pinned-key"
-        :class="{ loaded: pad.combo && pad.fileUrl, missing: !pad.combo || !pad.fileUrl }"
+        :class="{ loaded: isAllowedCustomCombo(pad.combo) && pad.fileUrl, missing: !isAllowedCustomCombo(pad.combo) || !pad.fileUrl }"
         @click="playCustomPad(pad)"
       >
         <span>{{ pad.combo || `Custom ${pad.id}` }}</span>
@@ -500,7 +515,7 @@ onBeforeUnmount(() => {
           v-for="pad in customPads"
           :key="`custom-${pad.id}`"
           class="custom-pad"
-          :class="{ ready: pad.combo && pad.fileUrl, recording: recordingPadId === pad.id, pinned: pad.pinned }"
+          :class="{ ready: isAllowedCustomCombo(pad.combo) && pad.fileUrl, recording: recordingPadId === pad.id, pinned: pad.pinned }"
         >
           <button
             type="button"
