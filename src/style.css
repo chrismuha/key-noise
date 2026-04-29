@@ -15,7 +15,6 @@ body {
   margin: 0;
   background:
     linear-gradient(135deg, rgba(78, 185, 171, 0.18), transparent 35%),
-    linear-gradient(315deg, rgba(238, 93, 75, 0.18), transparent 32%),
     #101114;
 }
 
@@ -60,43 +59,13 @@ input {
 }
 
 .meter span {
-  height: calc(18px + (var(--bar-index, 1) * 2px));
+  height: calc(18px + (var(--level, 0.35) * 70px));
   min-height: 18px;
   border-radius: 4px 4px 0 0;
   background: linear-gradient(180deg, #4eb9ab, #f0c65b 58%, #ee5d4b);
-  opacity: 0.62;
-  transform-origin: bottom;
-  animation: idlePulse 1.4s ease-in-out infinite alternate;
-}
-
-.meter span:nth-child(2n) {
-  height: 56px;
-  animation-delay: 0.08s;
-}
-
-.meter span:nth-child(3n) {
-  height: 74px;
-  animation-delay: 0.16s;
-}
-
-.meter span:nth-child(4n) {
-  height: 42px;
-  animation-delay: 0.24s;
-}
-
-.active .meter span {
-  animation-duration: 0.28s;
   opacity: 1;
-}
-
-@keyframes idlePulse {
-  from {
-    transform: scaleY(0.52);
-  }
-
-  to {
-    transform: scaleY(1);
-  }
+  transform-origin: bottom;
+  transition: height 42ms linear;
 }
 
 .headline {
@@ -166,6 +135,10 @@ h1 {
   accent-color: #4eb9ab;
 }
 
+.volume input:disabled {
+  opacity: 0.5;
+}
+
 .bindings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
@@ -208,6 +181,167 @@ h1 {
   opacity: 0.72;
 }
 
+.pinned-key span {
+  width: 100%;
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-section {
+  margin-top: 24px;
+}
+
+.section-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.section-title span {
+  color: rgba(247, 248, 251, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.custom-pads {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.custom-pad {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 10px;
+  aspect-ratio: 1 / 1;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #202329;
+}
+
+.custom-pad.ready {
+  border-color: rgba(78, 185, 171, 0.68);
+}
+
+.custom-pad.recording {
+  border-color: rgba(240, 198, 91, 0.86);
+  box-shadow: 0 0 0 3px rgba(240, 198, 91, 0.12);
+}
+
+.custom-pad.pinned {
+  border-color: rgba(240, 198, 91, 0.72);
+}
+
+.pin-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(16, 17, 20, 0.78);
+  color: rgba(247, 248, 251, 0.7);
+  cursor: pointer;
+}
+
+.pin-button svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.pin-button:hover,
+.pin-button.active {
+  border-color: rgba(240, 198, 91, 0.75);
+  color: #f0c65b;
+}
+
+.custom-trigger {
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #f7f8fb;
+  cursor: pointer;
+}
+
+.custom-trigger:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.custom-trigger span,
+.custom-trigger small {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(247, 248, 251, 0.62);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.custom-trigger strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 20px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.custom-actions button {
+  min-width: 0;
+  min-height: 30px;
+  padding: 6px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7f8fb;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.custom-actions button:hover {
+  border-color: rgba(240, 198, 91, 0.75);
+}
+
+.custom-actions .clear {
+  grid-column: 1 / -1;
+  color: rgba(247, 248, 251, 0.7);
+}
+
 @media (max-width: 760px) {
   .app {
     padding: 16px;
@@ -224,5 +358,9 @@ h1 {
 
   .bindings {
     grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  }
+
+  .custom-pads {
+    grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
   }
 }

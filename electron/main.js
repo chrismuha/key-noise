@@ -1,6 +1,8 @@
-const { app, BrowserWindow, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { pathToFileURL } = require('url');
 
 let mainWindow;
 let splashWindow = null;
@@ -245,4 +247,62 @@ app.on('activate', () => {
     createSplashWindow();
     createWindow();
   }
+});
+
+function runAppleScript(script) {
+  return new Promise((resolve, reject) => {
+    execFile('osascript', ['-e', script], (error, stdout) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(stdout.trim());
+    });
+  });
+}
+
+ipcMain.handle('key-noise:get-system-volume', async () => {
+  if (process.platform !== 'darwin') {
+    return { supported: false, volume: 100 };
+  }
+
+  const output = await runAppleScript('output volume of (get volume settings)');
+  const volume = Number.parseInt(output, 10);
+  return {
+    supported: true,
+    volume: Number.isFinite(volume) ? volume : 100
+  };
+});
+
+ipcMain.handle('key-noise:set-system-volume', async (_event, value) => {
+  if (process.platform !== 'darwin') {
+    return { supported: false, volume: 100 };
+  }
+
+  const volume = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+  await runAppleScript(`set volume output volume ${volume}`);
+  return { supported: true, volume };
+});
+
+ipcMain.handle('key-noise:select-mp3', async () => {
+  const options = {
+    title: 'Choose MP3 sound',
+    properties: ['openFile'],
+    filters: [{ name: 'MP3 Audio', extensions: ['mp3'] }]
+  };
+  const result = mainWindow && !mainWindow.isDestroyed()
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options);
+
+  if (result.canceled || !result.filePaths.length) {
+    return { canceled: true };
+  }
+
+  const filePath = result.filePaths[0];
+  return {
+    canceled: false,
+    fileName: path.basename(filePath),
+    filePath,
+    fileUrl: pathToFileURL(filePath).href
+  };
 });

@@ -4,7 +4,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { fixElectronBuilderDep0190 } from "../../../../PRACTICE SOFTWARE SUITE/_shared/fix-electron-builder-dep0190.mjs";
+import { fixElectronBuilderDep0190 } from "../../_shared/fix-electron-builder-dep0190.mjs";
 
 const suppressedPatterns = [
   "duplicate dependency references",
