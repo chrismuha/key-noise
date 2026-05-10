@@ -73,6 +73,6 @@
     "electron": "^35.0.1",
     "electron-builder": "^26.0.12",
     "vite": "^6.2.0",
-    "wait-on": "^8.0.3"
+    "wait-on": "^9.0.6"
   }
 }
