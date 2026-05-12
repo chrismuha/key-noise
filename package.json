@@ -1,6 +1,5 @@
 {
   "name": "key-noise",
-  "productName": "Key Noise",
   "version": "1.0.0",
   "private": true,
   "description": "Desktop keyboard sound app built with Electron.",
