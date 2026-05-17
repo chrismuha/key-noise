@@ -19,7 +19,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -193,6 +194,10 @@ h1 {
   margin-top: 24px;
 }
 
+.settings-section {
+  margin-top: 18px;
+}
+
 .section-title {
   display: flex;
   align-items: end;
@@ -212,6 +217,58 @@ h1 {
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #202329;
+}
+
+.settings-field {
+  display: grid;
+  gap: 7px;
+}
+
+.settings-field span {
+  color: rgba(247, 248, 251, 0.62);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.settings-field input,
+.settings-field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #f7f8fb;
+}
+
+.settings-field input:focus,
+.settings-field select:focus {
+  border-color: rgba(78, 185, 171, 0.82);
+  outline: none;
+}
+
+.settings-row > strong {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(78, 185, 171, 0.14);
+  color: #9de2d8;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .custom-pads {
@@ -358,6 +415,10 @@ h1 {
 
   .bindings {
     grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  }
+
+  .settings-row {
+    grid-template-columns: 1fr;
   }
 
   .custom-pads {
