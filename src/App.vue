@@ -5,7 +5,12 @@ const maxSoundSlots = 64;
 const customPadCount = 5;
 const meterBarCount = 18;
 const customPadsStorageKey = 'key-noise-custom-pads';
+const playbackSettingsStorageKey = 'key-noise-playback-settings';
 const supportedAudioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
+const defaultPlaybackSettings = {
+  soundLimitValue: 1,
+  soundLimitUnit: 'seconds'
+};
 const keys = [
   'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
   'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
@@ -19,6 +24,8 @@ const missingSounds = ref(new Set());
 const isArmed = ref(false);
 const systemVolume = ref(100);
 const systemVolumeSupported = ref(true);
+const soundLimitValue = ref(defaultPlaybackSettings.soundLimitValue);
+const soundLimitUnit = ref(defaultPlaybackSettings.soundLimitUnit);
 const recordingPadId = ref(null);
 const customPads = ref(createDefaultCustomPads());
 const meterLevels = ref(createIdleMeterLevels());
@@ -37,6 +44,7 @@ const keyBindings = computed(() => keys.map((key, index) => ({
 const loadedCount = computed(() => loadedSounds.value.size);
 const configuredCustomCount = computed(() => customPads.value.filter((pad) => isAllowedCustomCombo(pad.combo) && pad.fileUrl).length);
 const pinnedCustomPads = computed(() => customPads.value.filter((pad) => pad.pinned));
+const soundLimitMs = computed(() => normalizeSoundLimit(soundLimitValue.value, soundLimitUnit.value).milliseconds);
 const statusText = computed(() => {
   const readyCount = loadedCount.value + configuredCustomCount.value;
 
@@ -62,6 +70,44 @@ function createIdleMeterLevels() {
     const wave = Math.sin(index * 1.7) * 0.16;
     return Math.max(0.22, Math.min(0.68, 0.42 + wave));
   });
+}
+
+function normalizeSoundLimit(value, unit) {
+  const nextUnit = unit === 'milliseconds' ? 'milliseconds' : 'seconds';
+  const fallback = nextUnit === 'milliseconds'
+    ? defaultPlaybackSettings.soundLimitValue * 1000
+    : defaultPlaybackSettings.soundLimitValue;
+  const numericValue = Number(value);
+  const safeValue = Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
+  const milliseconds = nextUnit === 'milliseconds' ? safeValue : safeValue * 1000;
+
+  return {
+    value: safeValue,
+    unit: nextUnit,
+    milliseconds: Math.max(1, milliseconds)
+  };
+}
+
+function savePlaybackSettings() {
+  const normalized = normalizeSoundLimit(soundLimitValue.value, soundLimitUnit.value);
+  soundLimitValue.value = normalized.value;
+  soundLimitUnit.value = normalized.unit;
+  localStorage.setItem(playbackSettingsStorageKey, JSON.stringify({
+    soundLimitValue: normalized.value,
+    soundLimitUnit: normalized.unit
+  }));
+}
+
+function loadPlaybackSettings() {
+  try {
+    const savedSettings = JSON.parse(localStorage.getItem(playbackSettingsStorageKey) || '{}');
+    const normalized = normalizeSoundLimit(savedSettings.soundLimitValue, savedSettings.soundLimitUnit);
+    soundLimitValue.value = normalized.value;
+    soundLimitUnit.value = normalized.unit;
+  } catch {
+    soundLimitValue.value = defaultPlaybackSettings.soundLimitValue;
+    soundLimitUnit.value = defaultPlaybackSettings.soundLimitUnit;
+  }
 }
 
 function getKeyName(event) {
@@ -202,8 +248,19 @@ async function playAudioUrl(url) {
   const audio = new Audio(url);
   audio.volume = 1;
   const isSynced = await syncMeterToAudio(audio);
+  let limitTimer = 0;
+
+  const stopAtLimit = () => {
+    if (!audio.paused && !audio.ended) {
+      audio.pause();
+      audio.currentTime = 0;
+      resetMeterSoon();
+    }
+  };
 
   await audio.play();
+  limitTimer = window.setTimeout(stopAtLimit, soundLimitMs.value);
+  audio.addEventListener('ended', () => window.clearTimeout(limitTimer), { once: true });
   if (!isSynced) {
     startFallbackMeter(audio);
   }
@@ -418,6 +475,7 @@ function handleKeyup(event) {
 }
 
 onMounted(() => {
+  loadPlaybackSettings();
   loadCustomPads();
   scanSounds();
   refreshSystemVolume();
@@ -476,6 +534,37 @@ onBeforeUnmount(() => {
           />
           <strong>{{ systemVolumeSupported ? `${systemVolume}%` : 'System' }}</strong>
         </label>
+      </div>
+    </section>
+
+    <section class="settings-section" aria-label="Playback settings">
+      <div class="section-title">
+        <h2>Settings</h2>
+        <span>MP3 playback limit</span>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-field">
+          <span>Limit</span>
+          <input
+            v-model.number="soundLimitValue"
+            type="number"
+            :min="soundLimitUnit === 'milliseconds' ? 1 : 0.01"
+            :step="soundLimitUnit === 'milliseconds' ? 1 : 0.05"
+            @change="savePlaybackSettings"
+            @blur="savePlaybackSettings"
+          />
+        </label>
+
+        <label class="settings-field">
+          <span>Unit</span>
+          <select v-model="soundLimitUnit" @change="savePlaybackSettings">
+            <option value="seconds">Seconds</option>
+            <option value="milliseconds">Milliseconds</option>
+          </select>
+        </label>
+
+        <strong>{{ Math.round(soundLimitMs) }} ms max</strong>
       </div>
     </section>
 
