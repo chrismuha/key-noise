@@ -31,6 +31,36 @@ select {
   padding: 28px;
 }
 
+.tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.tabs button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(247, 248, 251, 0.72);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tabs button:hover,
+.tabs button.active {
+  border-color: rgba(78, 185, 171, 0.52);
+  background: rgba(78, 185, 171, 0.14);
+  color: #f7f8fb;
+}
+
 .stage {
   min-height: 390px;
   display: grid;
@@ -147,6 +177,10 @@ h1 {
   margin-top: 18px;
 }
 
+.mouse-bindings {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
 .key {
   min-height: 82px;
   display: grid;
@@ -172,6 +206,14 @@ h1 {
 .key span {
   font-size: 22px;
   font-weight: 900;
+}
+
+.mouse-key {
+  min-height: 128px;
+}
+
+.mouse-key span {
+  font-size: 26px;
 }
 
 .key.loaded {
@@ -409,12 +451,20 @@ h1 {
     padding: 22px;
   }
 
+  .tabs {
+    width: 100%;
+  }
+
   .readout {
     grid-template-columns: 1fr;
   }
 
   .bindings {
     grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  }
+
+  .mouse-bindings {
+    grid-template-columns: 1fr;
   }
 
   .settings-row {

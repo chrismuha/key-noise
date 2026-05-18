@@ -6,17 +6,27 @@ const customPadCount = 5;
 const meterBarCount = 18;
 const customPadsStorageKey = 'key-noise-custom-pads';
 const playbackSettingsStorageKey = 'key-noise-playback-settings';
+const mousePlaybackSettingsStorageKey = 'key-noise-mouse-playback-settings';
 const supportedAudioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
 const defaultPlaybackSettings = {
-  soundLimitValue: 1,
+  soundLimitValue: 5,
   soundLimitUnit: 'seconds'
 };
+const tabs = [
+  { id: 'keyboard', label: 'Keyboard' },
+  { id: 'mouse', label: 'Mouse Buttons' }
+];
 const keys = [
   'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
   'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
   'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Space'
 ];
+const mouseButtons = [
+  { button: 0, label: 'Left Click', soundNumber: 1 },
+  { button: 2, label: 'Right Click', soundNumber: 2 }
+];
 
+const activeTab = ref('keyboard');
 const lastKey = ref('');
 const lastSound = ref('');
 const loadedSounds = ref(new Set());
@@ -26,6 +36,8 @@ const systemVolume = ref(100);
 const systemVolumeSupported = ref(true);
 const soundLimitValue = ref(defaultPlaybackSettings.soundLimitValue);
 const soundLimitUnit = ref(defaultPlaybackSettings.soundLimitUnit);
+const mouseSoundLimitValue = ref(defaultPlaybackSettings.soundLimitValue);
+const mouseSoundLimitUnit = ref(defaultPlaybackSettings.soundLimitUnit);
 const recordingPadId = ref(null);
 const customPads = ref(createDefaultCustomPads());
 const meterLevels = ref(createIdleMeterLevels());
@@ -40,12 +52,73 @@ const keyBindings = computed(() => keys.map((key, index) => ({
   soundNumber: index + 1,
   fileName: `sound${index + 1}.mp3`
 })));
+const mouseBindings = computed(() => mouseButtons.map((button) => ({
+  ...button,
+  fileName: `sound${button.soundNumber}.mp3`
+})));
 
 const loadedCount = computed(() => loadedSounds.value.size);
 const configuredCustomCount = computed(() => customPads.value.filter((pad) => isAllowedCustomCombo(pad.combo) && pad.fileUrl).length);
 const pinnedCustomPads = computed(() => customPads.value.filter((pad) => pad.pinned));
 const soundLimitMs = computed(() => normalizeSoundLimit(soundLimitValue.value, soundLimitUnit.value).milliseconds);
+const mouseSoundLimitMs = computed(() => normalizeSoundLimit(mouseSoundLimitValue.value, mouseSoundLimitUnit.value).milliseconds);
+const activeSoundLimitValue = computed({
+  get() {
+    return activeTab.value === 'mouse' ? mouseSoundLimitValue.value : soundLimitValue.value;
+  },
+  set(value) {
+    if (activeTab.value === 'mouse') {
+      mouseSoundLimitValue.value = value;
+      return;
+    }
+
+    soundLimitValue.value = value;
+  }
+});
+const activeSoundLimitUnit = computed({
+  get() {
+    return activeTab.value === 'mouse' ? mouseSoundLimitUnit.value : soundLimitUnit.value;
+  },
+  set(value) {
+    const nextUnit = value === 'milliseconds' ? 'milliseconds' : 'seconds';
+    const currentUnit = activeTab.value === 'mouse' ? mouseSoundLimitUnit.value : soundLimitUnit.value;
+    const currentValue = activeTab.value === 'mouse' ? mouseSoundLimitValue.value : soundLimitValue.value;
+    const currentMilliseconds = normalizeSoundLimit(currentValue, currentUnit).milliseconds;
+    const nextValue = nextUnit === 'milliseconds' ? currentMilliseconds : currentMilliseconds / 1000;
+    const normalized = normalizeSoundLimit(nextValue, nextUnit);
+
+    if (activeTab.value === 'mouse') {
+      mouseSoundLimitValue.value = normalized.value;
+      mouseSoundLimitUnit.value = normalized.unit;
+      return;
+    }
+
+    soundLimitValue.value = normalized.value;
+    soundLimitUnit.value = normalized.unit;
+  }
+});
+const activeSoundLimitMs = computed(() => (activeTab.value === 'mouse' ? mouseSoundLimitMs.value : soundLimitMs.value));
+const activeReadoutLabel = computed(() => (activeTab.value === 'mouse' ? 'Mouse' : 'Key'));
+const activeSettingsTitle = computed(() => (activeTab.value === 'mouse' ? 'Mouse Settings' : 'Keyboard Settings'));
+const activeSettingsLabel = computed(() => (activeTab.value === 'mouse' ? 'Mouse MP3 playback limit' : 'MP3 playback limit'));
+const activeSoundLimitText = computed(() => {
+  if (activeSoundLimitUnit.value === 'milliseconds') {
+    return '5000ms max';
+  }
+
+  return '5 seconds max';
+});
 const statusText = computed(() => {
+  if (activeTab.value === 'mouse') {
+    const readyCount = mouseBindings.value.filter((binding) => loadedSounds.value.has(binding.soundNumber)).length;
+
+    if (readyCount > 0) {
+      return `${readyCount} mouse sound${readyCount === 1 ? '' : 's'} ready`;
+    }
+
+    return 'Add sound1.mp3 for left click and sound2.mp3 for right click';
+  }
+
   const readyCount = loadedCount.value + configuredCustomCount.value;
 
   if (readyCount > 0) {
@@ -77,8 +150,10 @@ function normalizeSoundLimit(value, unit) {
   const fallback = nextUnit === 'milliseconds'
     ? defaultPlaybackSettings.soundLimitValue * 1000
     : defaultPlaybackSettings.soundLimitValue;
+  const minValue = nextUnit === 'milliseconds' ? 1 : 1;
+  const maxValue = nextUnit === 'milliseconds' ? 5000 : 5;
   const numericValue = Number(value);
-  const safeValue = Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
+  const safeValue = Math.max(minValue, Math.min(maxValue, Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback));
   const milliseconds = nextUnit === 'milliseconds' ? safeValue : safeValue * 1000;
 
   return {
@@ -88,26 +163,35 @@ function normalizeSoundLimit(value, unit) {
   };
 }
 
-function savePlaybackSettings() {
-  const normalized = normalizeSoundLimit(soundLimitValue.value, soundLimitUnit.value);
-  soundLimitValue.value = normalized.value;
-  soundLimitUnit.value = normalized.unit;
-  localStorage.setItem(playbackSettingsStorageKey, JSON.stringify({
+function savePlaybackSettings(storageKey, valueRef, unitRef) {
+  const normalized = normalizeSoundLimit(valueRef.value, unitRef.value);
+  valueRef.value = normalized.value;
+  unitRef.value = normalized.unit;
+  localStorage.setItem(storageKey, JSON.stringify({
     soundLimitValue: normalized.value,
     soundLimitUnit: normalized.unit
   }));
 }
 
-function loadPlaybackSettings() {
+function loadPlaybackSettings(storageKey, valueRef, unitRef) {
   try {
-    const savedSettings = JSON.parse(localStorage.getItem(playbackSettingsStorageKey) || '{}');
+    const savedSettings = JSON.parse(localStorage.getItem(storageKey) || '{}');
     const normalized = normalizeSoundLimit(savedSettings.soundLimitValue, savedSettings.soundLimitUnit);
-    soundLimitValue.value = normalized.value;
-    soundLimitUnit.value = normalized.unit;
+    valueRef.value = normalized.value;
+    unitRef.value = normalized.unit;
   } catch {
-    soundLimitValue.value = defaultPlaybackSettings.soundLimitValue;
-    soundLimitUnit.value = defaultPlaybackSettings.soundLimitUnit;
+    valueRef.value = defaultPlaybackSettings.soundLimitValue;
+    unitRef.value = defaultPlaybackSettings.soundLimitUnit;
   }
+}
+
+function saveActivePlaybackSettings() {
+  if (activeTab.value === 'mouse') {
+    savePlaybackSettings(mousePlaybackSettingsStorageKey, mouseSoundLimitValue, mouseSoundLimitUnit);
+    return;
+  }
+
+  savePlaybackSettings(playbackSettingsStorageKey, soundLimitValue, soundLimitUnit);
 }
 
 function getKeyName(event) {
@@ -244,7 +328,7 @@ function startFallbackMeter(audio) {
   meterAnimationFrame = requestAnimationFrame(updateMeter);
 }
 
-async function playAudioUrl(url) {
+async function playAudioUrl(url, limitMs = soundLimitMs.value) {
   const audio = new Audio(url);
   audio.volume = 1;
   const isSynced = await syncMeterToAudio(audio);
@@ -259,7 +343,7 @@ async function playAudioUrl(url) {
   };
 
   await audio.play();
-  limitTimer = window.setTimeout(stopAtLimit, soundLimitMs.value);
+  limitTimer = window.setTimeout(stopAtLimit, limitMs);
   audio.addEventListener('ended', () => window.clearTimeout(limitTimer), { once: true });
   if (!isSynced) {
     startFallbackMeter(audio);
@@ -341,6 +425,31 @@ async function playSound(soundNumber) {
   }
 
   lastSound.value = `Missing sound${soundNumber}.mp3`;
+}
+
+async function playMouseButton(binding) {
+  const sources = buildSoundSources(binding.soundNumber);
+
+  for (const source of sources) {
+    if (!loadedSounds.value.has(binding.soundNumber) && !(await audioExists(source.url))) {
+      continue;
+    }
+
+    try {
+      await playAudioUrl(source.url, mouseSoundLimitMs.value);
+      refreshReactiveSet(loadedSounds, binding.soundNumber);
+      missingSounds.value.delete(binding.soundNumber);
+      isArmed.value = true;
+      lastKey.value = binding.label;
+      lastSound.value = `sound${binding.soundNumber}.${source.extension}`;
+      return;
+    } catch {
+      refreshReactiveSet(missingSounds, binding.soundNumber);
+    }
+  }
+
+  lastKey.value = binding.label;
+  lastSound.value = `Missing sound${binding.soundNumber}.mp3`;
 }
 
 function saveCustomPads() {
@@ -440,6 +549,7 @@ function handleRecording(event) {
 }
 
 function handleKeydown(event) {
+  if (activeTab.value !== 'keyboard') return;
   if (event.repeat) return;
   if (handleRecording(event)) return;
 
@@ -474,14 +584,37 @@ function handleKeyup(event) {
   }
 }
 
+function isInteractiveMouseTarget(target) {
+  return target instanceof Element && Boolean(target.closest('button, input, select, label, a, textarea'));
+}
+
+function handleMouseDown(event) {
+  if (activeTab.value !== 'mouse' || isInteractiveMouseTarget(event.target)) return;
+
+  const binding = mouseBindings.value.find((item) => item.button === event.button);
+  if (!binding) return;
+
+  event.preventDefault();
+  playMouseButton(binding);
+}
+
+function handleContextMenu(event) {
+  if (activeTab.value === 'mouse' && !isInteractiveMouseTarget(event.target)) {
+    event.preventDefault();
+  }
+}
+
 onMounted(() => {
-  loadPlaybackSettings();
+  loadPlaybackSettings(playbackSettingsStorageKey, soundLimitValue, soundLimitUnit);
+  loadPlaybackSettings(mousePlaybackSettingsStorageKey, mouseSoundLimitValue, mouseSoundLimitUnit);
   loadCustomPads();
   scanSounds();
   refreshSystemVolume();
   systemVolumePollTimer = window.setInterval(refreshSystemVolume, 1000);
   window.addEventListener('keydown', handleKeydown);
   window.addEventListener('keyup', handleKeyup);
+  window.addEventListener('mousedown', handleMouseDown);
+  window.addEventListener('contextmenu', handleContextMenu);
 });
 
 onBeforeUnmount(() => {
@@ -490,11 +623,25 @@ onBeforeUnmount(() => {
   window.clearInterval(systemVolumePollTimer);
   window.removeEventListener('keydown', handleKeydown);
   window.removeEventListener('keyup', handleKeyup);
+  window.removeEventListener('mousedown', handleMouseDown);
+  window.removeEventListener('contextmenu', handleContextMenu);
 });
 </script>
 
 <template>
   <main class="app">
+    <nav class="tabs" aria-label="Input modes">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        type="button"
+        :class="{ active: activeTab === tab.id }"
+        @click="activeTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+
     <section class="stage" :class="{ active: isArmed }" tabindex="0">
       <div class="meter" aria-hidden="true">
         <span
@@ -508,13 +655,13 @@ onBeforeUnmount(() => {
         <p class="eyebrow">{{ statusText }}</p>
         <h1>Key Noise</h1>
         <p class="subtitle">
-          Press a mapped key or one of your custom key combos.
+          {{ activeTab === 'mouse' ? 'Click the left or right mouse button while this tab is active.' : 'Press a mapped key or one of your custom key combos.' }}
         </p>
       </div>
 
       <div class="readout">
         <div>
-          <span>Key</span>
+          <span>{{ activeReadoutLabel }}</span>
           <strong>{{ lastKey || '-' }}</strong>
         </div>
         <div>
@@ -539,36 +686,37 @@ onBeforeUnmount(() => {
 
     <section class="settings-section" aria-label="Playback settings">
       <div class="section-title">
-        <h2>Settings</h2>
-        <span>MP3 playback limit</span>
+        <h2>{{ activeSettingsTitle }}</h2>
+        <span>{{ activeSettingsLabel }}</span>
       </div>
 
       <div class="settings-row">
         <label class="settings-field">
           <span>Limit</span>
           <input
-            v-model.number="soundLimitValue"
+            v-model.number="activeSoundLimitValue"
             type="number"
-            :min="soundLimitUnit === 'milliseconds' ? 1 : 0.01"
-            :step="soundLimitUnit === 'milliseconds' ? 1 : 0.05"
-            @change="savePlaybackSettings"
-            @blur="savePlaybackSettings"
+            :min="1"
+            :max="activeSoundLimitUnit === 'milliseconds' ? 5000 : 5"
+            :step="1"
+            @change="saveActivePlaybackSettings"
+            @blur="saveActivePlaybackSettings"
           />
         </label>
 
         <label class="settings-field">
           <span>Unit</span>
-          <select v-model="soundLimitUnit" @change="savePlaybackSettings">
+          <select v-model="activeSoundLimitUnit" @change="saveActivePlaybackSettings">
             <option value="seconds">Seconds</option>
             <option value="milliseconds">Milliseconds</option>
           </select>
         </label>
 
-        <strong>{{ Math.round(soundLimitMs) }} ms max</strong>
+        <strong>{{ activeSoundLimitText }}</strong>
       </div>
     </section>
 
-    <section class="bindings" aria-label="Key bindings">
+    <section v-if="activeTab === 'keyboard'" class="bindings" aria-label="Key bindings">
       <button
         v-for="binding in keyBindings"
         :key="binding.key"
@@ -593,7 +741,22 @@ onBeforeUnmount(() => {
       </button>
     </section>
 
-    <section class="custom-section" aria-label="Custom combo pads">
+    <section v-else class="bindings mouse-bindings" aria-label="Mouse button bindings">
+      <button
+        v-for="binding in mouseBindings"
+        :key="binding.label"
+        type="button"
+        class="key mouse-key"
+        :class="{ loaded: loadedSounds.has(binding.soundNumber), missing: missingSounds.has(binding.soundNumber) }"
+        @mousedown.prevent="playMouseButton(binding)"
+        @contextmenu.prevent
+      >
+        <span>{{ binding.label }}</span>
+        <small>{{ binding.fileName }}</small>
+      </button>
+    </section>
+
+    <section v-if="activeTab === 'keyboard'" class="custom-section" aria-label="Custom combo pads">
       <div class="section-title">
         <h2>Custom Combos</h2>
         <span>{{ configuredCustomCount }} / {{ customPadCount }} ready</span>

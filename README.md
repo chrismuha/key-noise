@@ -38,3 +38,14 @@ Z X C V B N M Space
 ```
 
 Each key plays the matching number, so `Q` plays `sound1.mp3`, `W` plays `sound2.mp3`, and so on.
+
+## Mouse map
+
+The Mouse Buttons tab uses the first two sound slots:
+
+```text
+Left Click  -> sound1.mp3
+Right Click -> sound2.mp3
+```
+
+Mouse button playback has its own saved duration setting.
