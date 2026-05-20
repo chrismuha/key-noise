@@ -220,6 +220,16 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  if (!app.isPackaged) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (((input.meta && input.alt) || (input.control && input.shift)) && input.key?.toLowerCase() === 'i') {
+        event.preventDefault();
+        mainWindow.webContents.toggleDevTools();
+      }
+    });
+    if (process.env.OPEN_DEVTOOLS === '1') mainWindow.webContents.openDevTools();
+  }
+
   mainWindow.webContents.once('did-fail-load', revealMainWindow);
 
   mainWindow.on('closed', () => {
