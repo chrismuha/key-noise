@@ -3,6 +3,7 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
+const { loadRenderer } = require('../startup-mode.cjs');
 
 let mainWindow;
 let splashWindow = null;
@@ -214,11 +215,10 @@ function createWindow() {
 
   ipcMain.on('key-noise:renderer-ready', rendererReadyHandler);
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-  }
+  loadRenderer(mainWindow, {
+    defaultCloudUrl: 'http://localhost:5178',
+    localFile: path.join(__dirname, '../dist/index.html'),
+  });
 
   if (!app.isPackaged) {
     mainWindow.webContents.on('before-input-event', (event, input) => {
