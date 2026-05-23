@@ -40,7 +40,9 @@
     "all": "bash ../run-all.sh",
     "scripts": "bash ../run-all.sh",
     "start:cloud": "node ../_shared/vite-electron-dev.mjs --port 5178",
-    "start:offline": "env -u ELECTRON_RUN_AS_NODE MCR_STARTUP_MODE=offline NODE_ENV=production electron . --offline"
+    "start:offline": "env -u ELECTRON_RUN_AS_NODE MCR_STARTUP_MODE=offline NODE_ENV=production electron . --offline",
+    "dev:cloud": "node ../_shared/vite-electron-dev.mjs --port 5178",
+    "dev:offline": "env -u ELECTRON_RUN_AS_NODE MCR_STARTUP_MODE=offline NODE_ENV=development electron . --offline"
   },
   "keywords": [],
   "author": {
