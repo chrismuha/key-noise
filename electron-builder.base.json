@@ -10,6 +10,7 @@
     "electron/**/*",
     "build/**/*",
     "main.js",
+    "startup-mode.cjs",
     "package.json"
   ],
   "forceCodeSigning": false,
