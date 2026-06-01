@@ -1,4 +1,10 @@
 const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disable-logging');
+app.commandLine.appendSwitch('log-level', '3');
+
 const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
