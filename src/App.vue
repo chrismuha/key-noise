@@ -41,6 +41,7 @@ const mouseSoundLimitUnit = ref(defaultPlaybackSettings.soundLimitUnit);
 const recordingPadId = ref(null);
 const customPads = ref(createDefaultCustomPads());
 const meterLevels = ref(createIdleMeterLevels());
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
 let audioContext;
 let meterAnimationFrame = 0;
@@ -604,6 +605,43 @@ function handleContextMenu(event) {
   }
 }
 
+function getFocusableElements() {
+  return Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
+    if (!(element instanceof HTMLElement)) return false;
+    if (element.hidden || element.getAttribute('aria-hidden') === 'true') return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+}
+
+function handleTabAndEscapeFocus(event) {
+  if (event.defaultPrevented) return;
+
+  if (event.key === 'Escape') {
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== document.documentElement && typeof active.blur === 'function') {
+      active.blur();
+    }
+    return;
+  }
+
+  if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+
+  const focusable = getFocusableElements();
+  const currentIndex = focusable.indexOf(document.activeElement);
+  if (currentIndex === -1 || focusable.length < 2) return;
+
+  const target = event.shiftKey && currentIndex === 0
+    ? focusable[focusable.length - 1]
+    : !event.shiftKey && currentIndex === focusable.length - 1
+      ? focusable[0]
+      : null;
+
+  if (!target) return;
+  event.preventDefault();
+  target.focus({ preventScroll: true });
+}
+
 onMounted(() => {
   loadPlaybackSettings(playbackSettingsStorageKey, soundLimitValue, soundLimitUnit);
   loadPlaybackSettings(mousePlaybackSettingsStorageKey, mouseSoundLimitValue, mouseSoundLimitUnit);
@@ -612,6 +650,7 @@ onMounted(() => {
   refreshSystemVolume();
   systemVolumePollTimer = window.setInterval(refreshSystemVolume, 1000);
   window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('keydown', handleTabAndEscapeFocus);
   window.addEventListener('keyup', handleKeyup);
   window.addEventListener('mousedown', handleMouseDown);
   window.addEventListener('contextmenu', handleContextMenu);
@@ -622,6 +661,7 @@ onBeforeUnmount(() => {
   window.clearTimeout(meterResetTimer);
   window.clearInterval(systemVolumePollTimer);
   window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('keydown', handleTabAndEscapeFocus);
   window.removeEventListener('keyup', handleKeyup);
   window.removeEventListener('mousedown', handleMouseDown);
   window.removeEventListener('contextmenu', handleContextMenu);
