@@ -102,7 +102,7 @@
     "@vitejs/plugin-vue": "^6.0.8",
     "concurrently": "^10.0.4",
     "cross-env": "^10.1.0",
-    "electron": "^43.2.0",
+    "electron": "^43.3.0",
     "electron-builder": "^26.15.3",
     "vite": "^8.2.1",
     "wait-on": "^9.1.0"
