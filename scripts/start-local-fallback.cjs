@@ -4,7 +4,7 @@ const { join } = require('path');
 const net = require('net');
 
 const projectRoot = join(__dirname, '..');
-const defaultPort = 5178;
+const defaultPort = 5199;
 
 function checkPort(port) {
   return new Promise((resolve) => {

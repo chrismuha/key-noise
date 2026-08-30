@@ -170,7 +170,7 @@ if (!sharedPath) {
   process.stdout.write(`Skipping missing shared helper: ${sharedFile}\n`);
   const helperName = sharedFile.split('/').pop();
   const fallbackCommands = {
-    'vite-electron-dev.mjs': ['node', [join(scriptDir, 'start-local-fallback.cjs'), '--prefer-port=5178']],
+    'vite-electron-dev.mjs': ['node', [join(scriptDir, 'start-local-fallback.cjs'), '--prefer-port=5199']],
   };
 
   const fallback = fallbackCommands[helperName];

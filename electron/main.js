@@ -222,7 +222,7 @@ function createWindow() {
   ipcMain.on('key-noise:renderer-ready', rendererReadyHandler);
 
   loadRenderer(mainWindow, {
-    defaultCloudUrl: 'http://localhost:5178',
+    defaultCloudUrl: 'http://localhost:5199',
     localFile: path.join(__dirname, '../dist/index.html'),
   });
 
