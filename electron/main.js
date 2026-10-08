@@ -27,7 +27,7 @@ function getAppIconPath() {
 }
 
 function getDockIconImage() {
-  const image = nativeImage.createFromPath(path.join(app.getAppPath(), 'build', 'icon.png'));
+  const image = nativeImage.createFromPath(path.join(app.getAppPath(), 'build', process.platform === 'darwin' ? 'icon-mac-standard.png' : 'icon.png'));
   return image.isEmpty() ? undefined : image;
 }
 
