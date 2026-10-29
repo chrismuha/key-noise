@@ -1,5 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Sirens from './Sirens.vue';
+import { cycleSoundFocus } from './sound-focus';
 
 const maxSoundSlots = 64;
 const customPadCount = 5;
@@ -14,7 +16,8 @@ const defaultPlaybackSettings = {
 };
 const tabs = [
   { id: 'keyboard', label: 'Keyboard' },
-  { id: 'mouse', label: 'Mouse Buttons' }
+  { id: 'mouse', label: 'Mouse Buttons' },
+  { id: 'sirens', label: 'Sirens' }
 ];
 const keys = [
   'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
@@ -26,7 +29,43 @@ const mouseButtons = [
   { button: 2, label: 'Right Click', soundNumber: 2 }
 ];
 
+function loadSoundTabSetting() {
+  try { return localStorage.getItem('key-noise-tab-sounds-only') !== 'off'; }
+  catch { return true; }
+}
+const tabSoundsOnly = ref(loadSoundTabSetting());
+const loopSounds = ref(false);
+const headerCollapsed = ref(false);
+const activeAudio = new Map();
+let audioGeneration = 0;
+function toggleHeader() {
+  headerCollapsed.value = !headerCollapsed.value;
+  if (headerCollapsed.value) mobilePage.value = 'soundboard';
+}
+watch(loopSounds, (value) => { for (const audio of activeAudio.keys()) audio.loop = value; });
+function stopAllAudio() {
+  audioGeneration++;
+  for (const [audio, timer] of activeAudio) {
+    window.clearInterval(timer);
+    audio.pause();
+    audio.currentTime = 0;
+  }
+  activeAudio.clear();
+  resetMeterSoon();
+}
+
+function saveSoundTabSetting() {
+  try { localStorage.setItem('key-noise-tab-sounds-only', tabSoundsOnly.value ? 'on' : 'off'); } catch { /* Keep working for this session. */ }
+}
 const activeTab = ref('keyboard');
+const mobilePage = ref('soundboard');
+const keyboardPage = ref(1);
+const isMobile = ref(false);
+let mobileMedia;
+function updateMobileLayout() { isMobile.value = mobileMedia.matches; }
+const keyboardPageCount = computed(() => Math.max(1, Math.ceil((keyBindings.value.length + pinnedCustomPads.value.length) / 12)));
+function keyboardItemVisible(index) { return !isMobile.value || Math.floor(index / 12) === keyboardPage.value - 1; }
+
 const lastKey = ref('');
 const lastSound = ref('');
 const loadedSounds = ref(new Set());
@@ -41,7 +80,6 @@ const mouseSoundLimitUnit = ref(defaultPlaybackSettings.soundLimitUnit);
 const recordingPadId = ref(null);
 const customPads = ref(createDefaultCustomPads());
 const meterLevels = ref(createIdleMeterLevels());
-const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
 let audioContext;
 let meterAnimationFrame = 0;
@@ -330,22 +368,31 @@ function startFallbackMeter(audio) {
 }
 
 async function playAudioUrl(url, limitMs = soundLimitMs.value) {
+  const generation = audioGeneration;
   const audio = new Audio(url);
-  audio.volume = 1;
+  audio.volume = window.keyNoiseApi ? 1 : systemVolume.value / 100;
   const isSynced = await syncMeterToAudio(audio);
-  let limitTimer = 0;
-
-  const stopAtLimit = () => {
-    if (!audio.paused && !audio.ended) {
+  if (generation !== audioGeneration) return;
+  audio.loop = loopSounds.value;
+  await audio.play();
+  if (generation !== audioGeneration) { audio.pause(); return; }
+  const limitTimer = window.setInterval(() => {
+    if (loopSounds.value) {
+      audio.loop = true;
+      audio.currentTime = 0;
+    } else {
       audio.pause();
       audio.currentTime = 0;
+      window.clearInterval(limitTimer);
+      activeAudio.delete(audio);
       resetMeterSoon();
     }
-  };
-
-  await audio.play();
-  limitTimer = window.setTimeout(stopAtLimit, limitMs);
-  audio.addEventListener('ended', () => window.clearTimeout(limitTimer), { once: true });
+  }, limitMs);
+  activeAudio.set(audio, limitTimer);
+  audio.addEventListener('ended', () => {
+    window.clearInterval(limitTimer);
+    activeAudio.delete(audio);
+  }, { once: true });
   if (!isSynced) {
     startFallbackMeter(audio);
   }
@@ -374,7 +421,7 @@ async function setSystemVolume() {
 async function audioExists(url) {
   try {
     const response = await fetch(url, { method: 'HEAD' });
-    return response.ok;
+    return response.ok && !response.headers.get('content-type')?.includes('text/html');
   } catch {
     return false;
   }
@@ -484,6 +531,25 @@ function startRecordingCombo(padId) {
 }
 
 async function chooseCustomMp3(pad) {
+  if (!window.keyNoiseApi?.selectMp3) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.mp3,audio/mpeg';
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        pad.fileName = file.name;
+        pad.fileUrl = String(reader.result);
+        try { saveCustomPads(); lastSound.value = `${file.name} loaded`; }
+        catch { lastSound.value = 'Loaded for this session; browser storage is full.'; }
+      };
+      reader.readAsDataURL(file);
+    }, { once: true });
+    input.click();
+    return;
+  }
   const result = await window.keyNoiseApi?.selectMp3?.();
   if (!result || result.canceled) return;
 
@@ -553,6 +619,7 @@ function handleKeydown(event) {
   if (activeTab.value !== 'keyboard') return;
   if (event.repeat) return;
   if (handleRecording(event)) return;
+  if (event.target instanceof Element && event.target.closest('input, select, textarea, button, a, [contenteditable="true"]')) return;
 
   const combo = getComboFromEvent(event);
   if (isAllowedCustomCombo(combo)) {
@@ -605,15 +672,6 @@ function handleContextMenu(event) {
   }
 }
 
-function getFocusableElements() {
-  return Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
-    if (!(element instanceof HTMLElement)) return false;
-    if (element.hidden || element.getAttribute('aria-hidden') === 'true') return false;
-    const style = window.getComputedStyle(element);
-    return style.display !== 'none' && style.visibility !== 'hidden';
-  });
-}
-
 function handleTabAndEscapeFocus(event) {
   if (event.defaultPrevented) return;
 
@@ -625,24 +683,13 @@ function handleTabAndEscapeFocus(event) {
     return;
   }
 
-  if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
-
-  const focusable = getFocusableElements();
-  const currentIndex = focusable.indexOf(document.activeElement);
-  if (currentIndex === -1 || focusable.length < 2) return;
-
-  const target = event.shiftKey && currentIndex === 0
-    ? focusable[focusable.length - 1]
-    : !event.shiftKey && currentIndex === focusable.length - 1
-      ? focusable[0]
-      : null;
-
-  if (!target) return;
-  event.preventDefault();
-  target.focus({ preventScroll: true });
+  if (tabSoundsOnly.value) cycleSoundFocus(event);
 }
 
 onMounted(() => {
+  mobileMedia = window.matchMedia('(max-width: 760px)');
+  updateMobileLayout();
+  mobileMedia.addEventListener('change', updateMobileLayout);
   loadPlaybackSettings(playbackSettingsStorageKey, soundLimitValue, soundLimitUnit);
   loadPlaybackSettings(mousePlaybackSettingsStorageKey, mouseSoundLimitValue, mouseSoundLimitUnit);
   loadCustomPads();
@@ -657,6 +704,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  stopAllAudio();
+  mobileMedia?.removeEventListener('change', updateMobileLayout);
   stopMeterAnimation();
   window.clearTimeout(meterResetTimer);
   window.clearInterval(systemVolumePollTimer);
@@ -669,20 +718,39 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="app">
+  <main class="app" :class="{ 'board-only': headerCollapsed }" :data-mobile-page="mobilePage">
+    <div class="soundboard-toolbar">
+      <button class="collapse-header" type="button" :aria-expanded="!headerCollapsed" :aria-label="headerCollapsed ? 'Show header and controls' : 'Hide header and controls'" @click="toggleHeader">{{ headerCollapsed ? '▾ Show controls' : '▴ Hide controls' }}</button>
+      <label class="loop-option"><input v-model="loopSounds" type="checkbox" /><span>Loop sounds</span></label>
+      <button v-if="activeTab !== 'sirens'" class="stop-siren" type="button" @click="stopAllAudio">Stop all sounds</button>
+    </div>
     <nav class="tabs" aria-label="Input modes">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
         :class="{ active: activeTab === tab.id }"
-        @click="activeTab = tab.id"
+        :aria-pressed="activeTab === tab.id"
+        @click="activeTab = tab.id; mobilePage = 'soundboard'; keyboardPage = 1"
       >
         {{ tab.label }}
       </button>
     </nav>
 
-    <section class="stage" :class="{ active: isArmed }" tabindex="0">
+    <nav class="mobile-navigation" aria-label="Mobile pages">
+      <button type="button" :aria-pressed="mobilePage === 'soundboard'" @click="mobilePage = 'soundboard'">Soundboard</button>
+      <button type="button" :aria-pressed="mobilePage === 'settings'" @click="mobilePage = 'settings'">Settings</button>
+      <button v-if="activeTab === 'keyboard'" type="button" :aria-pressed="mobilePage === 'custom'" @click="mobilePage = 'custom'">Custom Combos</button>
+    </nav>
+
+    <section class="sound-navigation-settings mobile-settings-content" aria-label="Keyboard navigation settings">
+      <label class="multi-sound-option"><input v-model="tabSoundsOnly" type="checkbox" @change="saveSoundTabSetting" /><span>Tab through sounds only</span></label>
+      <p>Tab / Shift+Tab cycles through visible sound buttons. Turn off to tab through all controls.</p>
+    </section>
+
+    <Sirens v-if="activeTab === 'sirens'" :loop-sounds="loopSounds" />
+
+    <section v-if="activeTab !== 'sirens'" class="stage" :class="{ active: isArmed }" tabindex="0">
       <div class="meter" aria-hidden="true">
         <span
           v-for="bar in meterBarCount"
@@ -724,7 +792,7 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section class="settings-section" aria-label="Playback settings">
+    <section v-if="activeTab !== 'sirens'" class="settings-section" aria-label="Playback settings">
       <div class="section-title">
         <h2>{{ activeSettingsTitle }}</h2>
         <span>{{ activeSettingsLabel }}</span>
@@ -758,10 +826,12 @@ onBeforeUnmount(() => {
 
     <section v-if="activeTab === 'keyboard'" class="bindings" aria-label="Key bindings">
       <button
-        v-for="binding in keyBindings"
+        v-for="(binding, index) in keyBindings"
+        v-show="keyboardItemVisible(index)"
         :key="binding.key"
         type="button"
         class="key"
+        data-sound-button
         @click="playSound(binding.soundNumber)"
       >
         <span>{{ binding.key }}</span>
@@ -769,10 +839,12 @@ onBeforeUnmount(() => {
       </button>
 
       <button
-        v-for="pad in pinnedCustomPads"
+        v-for="(pad, index) in pinnedCustomPads"
+        v-show="keyboardItemVisible(keyBindings.length + index)"
         :key="`pinned-${pad.id}`"
         type="button"
         class="key pinned-key"
+        data-sound-button
         :class="{ loaded: isAllowedCustomCombo(pad.combo) && pad.fileUrl, missing: !isAllowedCustomCombo(pad.combo) || !pad.fileUrl }"
         @click="playCustomPad(pad)"
       >
@@ -781,20 +853,30 @@ onBeforeUnmount(() => {
       </button>
     </section>
 
-    <section v-else class="bindings mouse-bindings" aria-label="Mouse button bindings">
+    <section v-else-if="activeTab === 'mouse'" class="bindings mouse-bindings" aria-label="Mouse button bindings">
       <button
         v-for="binding in mouseBindings"
         :key="binding.label"
         type="button"
         class="key mouse-key"
+        data-sound-button
         :class="{ loaded: loadedSounds.has(binding.soundNumber), missing: missingSounds.has(binding.soundNumber) }"
-        @mousedown.prevent="playMouseButton(binding)"
+        @click="playMouseButton(binding)"
         @contextmenu.prevent
       >
         <span>{{ binding.label }}</span>
         <small>{{ binding.fileName }}</small>
       </button>
     </section>
+
+    <div v-if="activeTab !== 'sirens'" class="mobile-only mobile-board-footer">
+      <p role="status">{{ lastSound || statusText }}</p>
+      <nav v-if="activeTab === 'keyboard'" class="board-pagination" aria-label="Keyboard sound pages">
+        <button type="button" :disabled="keyboardPage <= 1" @click="keyboardPage--">Previous</button>
+        <span>Page {{ keyboardPage }} / {{ keyboardPageCount }}</span>
+        <button type="button" :disabled="keyboardPage >= keyboardPageCount" @click="keyboardPage++">Next</button>
+      </nav>
+    </div>
 
     <section v-if="activeTab === 'keyboard'" class="custom-section" aria-label="Custom combo pads">
       <div class="section-title">
@@ -822,7 +904,7 @@ onBeforeUnmount(() => {
             </svg>
           </button>
 
-          <button type="button" class="custom-trigger" @click="playCustomPad(pad)">
+          <button type="button" class="custom-trigger" data-sound-button @click="playCustomPad(pad)">
             <span>Custom {{ pad.id }}</span>
             <strong>{{ pad.combo || 'No combo' }}</strong>
             <small>{{ pad.fileName || 'No MP3' }}</small>
