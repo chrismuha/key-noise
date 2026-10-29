@@ -1,5 +1,41 @@
 # key-noise Change List
 
+## October 29, 2026 — Signal Corrections and Keyboard/Mouse Fake Sounds
+
+- Add independently remembered Real/Fake sound dropdowns to Keyboard and Mouse,
+  defaulting to generated previews without recordings. Provide keyboard tones,
+  separate mouse sounds, custom-pad previews, live volume/mute, Loop, and Stop.
+- Make Attack complete ten full wind-ups before its final coast. Make Fire a
+  faster ten-wail pattern with shallow dips, keeping at least 60% rotor speed
+  between rises instead of repeatedly slowing nearly to a stop.
+- Restore Test's earlier response: 2.2-second short-growl coast and roughly
+  4-second manual full-speed coast, independently of other signal coast timings.
+- Resume cancelled Attack/Alert/Fire on the same oscillator pair at its current
+  speed, smoothly recovering to a full-speed part of the remaining sequence.
+  Preserve progress and real recording position instead of restarting.
+- Switch the signal lamp off immediately on Cancel while retaining audible
+  coast-down and immediate button release.
+- Resize/recenter the civil-defense triangle and CD so both fit within the circle.
+- Remove the obsolete short siren duration selector for fixed complete cycles.
+- Consolidate README instructions and add regression tests for all ten Attack
+  peaks, Fire trough speeds, signal recovery, placeholder buffers, and board controls.
+- Verify muted Keyboard/Mouse playback, real-file prompts, Fire Cancel/resume,
+  immediate lamp/button release, and corrected emblem in the live browser.
+
+## October 29, 2026 — Slower, Gradual Siren Coast-Downs
+
+- Replace the steep initial pitch drop with a smooth coast curve that loses
+  speed gently at first and settles gradually through its low growl.
+- Extend full-speed Attack, Fire, and manual Test coasts to 18 seconds, Alert
+  to 24 seconds, and the short Test growl's coast to 6 seconds. Scale manual
+  coast time to current speed while preserving re-powering the same rotor.
+- Preserve Fire/Alert powered patterns and peak holds; longer tails make their
+  total cycles 74 seconds and 3 minutes 18 seconds respectively.
+- Retain immediate control-button release on Cancel, exact mute, and prompt
+  stops when switching tabs/sources or closing the simulator.
+- Add regression coverage for gradual early pitch loss, continuous mid-coast
+  speed, a lingering low tail, and exact silence at the end.
+
 ## October 29, 2026 — Longer Full-Speed Signal Holds
 
 - Extend fake Fire to one minute total and fake Alert to three minutes total,

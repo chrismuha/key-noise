@@ -19,9 +19,9 @@ const allowMultiple = ref(true);
 const sirenMode = ref('attack');
 const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', test: 'Test / Growl' };
 const modeDescriptions = {
-  attack: 'Full wind-up, rising/falling wail, then a complete coast-down.',
-  alert: '3-minute Alert: ten slower wind-ups with long full-speed holds, then coast-down.',
-  fire: '1-minute Fire: ten full wind-ups with sustained peaks, then coast-down.',
+  attack: 'Ten complete wind-ups, with the rotor turning between pulses, then a full coast-down.',
+  alert: 'Alert: ten slower wind-ups with long full-speed holds and a gradual 24-second coast.',
+  fire: 'Fire: ten fast wails with shallow dips, followed by one final coast-down.',
   test: 'A low growl with a short wind-up and a complete coast-down.'
 };
 function expectedFile(siren) { return `${siren.id}-${sirenMode.value}.mp3`; }
@@ -135,6 +135,25 @@ async function simulatorCommand(mode, { held = false } = {}) {
   const request = ++simulatorCommandRequest;
   const siren = simulatorSiren.value;
   if (!siren) return;
+  const session = sessions.get(siren.id);
+  if (!held && session?.mode === mode) {
+    const continued = session.simulation
+      ? (!session.stopping && !session.held) || session.simulation.resumeSignal()
+      : session.audio && !session.audio.paused;
+    if (continued) {
+      session.stopping = false;
+      session.held = false;
+      window.clearTimeout(session.timer);
+      if (session.audio) {
+        session.output.gain.cancelAndHoldAtTime(context.currentTime);
+        session.output.gain.linearRampToValueAtTime(1, context.currentTime + 0.01);
+        session.audio.loop = props.loopSounds;
+      }
+      simulatorActiveMode.value = mode;
+      status.value = `${modeLabels[mode]} resumed from the current speed.`;
+      return;
+    }
+  }
   stop();
   simulatorActiveMode.value = mode;
   sirenMode.value = mode;
@@ -201,7 +220,7 @@ async function play(siren, { held = false } = {}) {
     return;
   }
   if (!allowMultiple.value) stop();
-  const session = { held };
+  const session = { held, mode: sirenMode.value };
   sessions.set(siren.id, session);
   // Include pending requests so a second click or Stop all cancels them too.
   playing.value.add(siren.id);
@@ -293,14 +312,13 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
 
 <template>
   <section class="sirens-section" aria-label="Siren soundboard">
-    <SirenSimulator v-if="simulatorSiren" :siren="simulatorSiren" :running="playing.has(simulatorSiren.id)" :mode="sirenMode" :active-mode="simulatorActiveMode" :status="status" :volume="volume" :source="soundMode" :loop="props.loopSounds" @command="simulatorCommand" @test-start="beginSimulatorTest" @test-end="releaseSimulatorTest" @cancel="stopButton" @close="closeSimulator" @update:volume="volume = $event" @update:source="soundMode = $event" @update:loop="emit('update:loopSounds', $event)" />
+    <SirenSimulator v-if="simulatorSiren" :siren="simulatorSiren" :running="playing.has(simulatorSiren.id)" :signal-active="Boolean(simulatorActiveMode)" :mode="sirenMode" :active-mode="simulatorActiveMode" :status="status" :volume="volume" :source="soundMode" :loop="props.loopSounds" @command="simulatorCommand" @test-start="beginSimulatorTest" @test-end="releaseSimulatorTest" @cancel="stopButton" @close="closeSimulator" @update:volume="volume = $event" @update:source="soundMode = $event" @update:loop="emit('update:loopSounds', $event)" />
     <div class="mobile-settings-content">
     <div class="section-title"><h2>Air Raid Sirens</h2><span>{{ filtered.length }} models</span></div>
     <p class="siren-note">Browse by make, model, and type. Choose fake sounds to play immediately, or real sounds to use your own files. Play several models together; click a playing model to stop just that siren. The simulations are playful approximations, not exact recordings of each model.</p>
     <p class="eyebrow siren-readiness" role="status">{{ readinessText }}</p>
     <div class="siren-controls">
       <label class="settings-field"><span>Search models or types</span><input v-model="search" type="search" placeholder="Try Thunderbolt or electronic" /></label>
-      <label class="settings-field"><span>{{ !simulated ? 'Real sounds play the full recording' : sirenMode === 'attack' ? 'Powered time (plus wind-up/down)' : sirenMode === 'test' ? 'Test uses its own growl cycle' : sirenMode === 'fire' ? 'Fire cycle: 1 minute' : 'Alert cycle: 3 minutes' }}</span><select v-model.number="duration" :disabled="!simulated || sirenMode !== 'attack'"><option :value="1">1 second</option><option :value="2">2 seconds</option><option :value="3">3 seconds</option><option :value="4">4 seconds</option><option :value="5">5 seconds</option></select></label>
       <label class="settings-field"><span>Siren volume · {{ volume }}%</span><input v-model.number="volume" aria-label="Siren volume" type="range" min="0" max="100" step="1" /></label>
       <button class="stop-siren" type="button" :disabled="!playing.size" @click="stopButton">Stop all sirens</button>
       <button class="rescan-sirens" type="button" :disabled="scanning" @click="scan">{{ scanning ? 'Checking files…' : 'Refresh sound files' }}</button>

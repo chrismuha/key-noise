@@ -1,35 +1,37 @@
 # Key Noise
 
-Electron + Vue app that plays numbered sound files when mapped keyboard keys are pressed.
+Electron + Vue soundboards for Keyboard, Mouse Buttons, and outdoor warning sirens.
 
-## Install
+## Run
 
 ```bash
 npm install
-npm run dev
+npm run dev             # Electron
+npm run dev web         # Browser + screen tester
+npm run dev:web         # Equivalent browser command
+npm test
+npm run build:web
 ```
 
-## Sound files
+The app runs at `http://127.0.0.1:5199/`. The web commands open
+`/dev-preview.html`, with **Current device** selected by default. It fills the
+available browser area and follows resizing. Phone/tablet/desktop presets,
+rotation, custom sizes, simulated cutouts, and overflow checks remain available.
+Key Noise's tester has no casino cabinet presets. To use another port:
+`npm run dev -- web --port 5299`.
 
-Add your sounds to:
+## Keyboard and Mouse
 
-```text
-public/sounds/
-```
+Both boards default to **Fake sounds**, which work immediately without files:
+27 distinct keyboard tones, separate left/right mouse sounds, and custom-pad
+previews. Each board has its own **Sound source** dropdown, remembered separately.
+Choose **Real sounds** to use recordings. No real recordings are included.
 
-Name them in numerical order:
+Place real files in `public/sounds/`, named `sound1.mp3`, `sound2.mp3`, and onward.
+WAV, OGG, and M4A with the same names are also supported. Missing real files show
+the filename/folder prompt; fake sounds never replace missing files in Real mode.
 
-```text
-sound1.mp3
-sound2.mp3
-sound3.mp3
-```
-
-The app also checks for `.wav`, `.ogg`, and `.m4a` files with the same numbering.
-
-## Key map
-
-The first 27 sound slots are mapped across the keyboard:
+The 27 keyboard slots follow this order:
 
 ```text
 Q W E R T Y U I O P
@@ -37,108 +39,48 @@ A S D F G H J K L
 Z X C V B N M Space
 ```
 
-Each key plays the matching number, so `Q` plays `sound1.mp3`, `W` plays `sound2.mp3`, and so on.
+Q maps to sound1, W to sound2, and so on. Mouse uses sound1 for Left Click and
+sound2 for Right Click. Keyboard and Mouse each retain their own playback limit.
+Custom Combos support shortcut recording, MP3 uploads, and pinning to the board.
+Browser uploads use browser storage; Electron uses its native file picker.
 
-## Mouse map
-
-The Mouse Buttons tab uses the first two sound slots:
-
-```text
-Left Click  -> sound1.mp3
-Right Click -> sound2.mp3
-```
-
-Mouse button playback has its own saved duration setting.
+Fake sounds support live volume, exact mute, Loop, and Stop all sounds. Browser
+volume also updates real audio already playing. Switching board or source stops
+its active keyboard/mouse sounds. Typing and focused button activation are not
+intercepted by mapped keyboard shortcuts.
 
 ## Sirens
 
-The Sirens tab includes selected current and historical models from Whelen,
-Federal Signal, American Signal, ACA, Sentry, and Hörmann. Filter by manufacturer
-or search make, model, and type. This is an expandable catalog, not an exhaustive
-list of every siren ever made.
+The catalog has 51 selected current/historical models from Whelen, Federal
+Signal, American Signal, ACA, Sentry, and Hörmann. Filter by manufacturer or
+search make, model, and type. Fake sounds are illustrative synthesis, not exact
+model recordings or standardized emergency signals. The catalog is expandable
+and is not exhaustive.
 
-**Sound source** offers **Fake sounds** (the default) and **Real sounds**. Every model can play an illustrative
-synthesized wail without audio files. These are approximations, not exact model
-recordings. Select Real sounds to play your own audio instead. Missing files
-show a message; there is no automatic simulated fallback in Real sounds mode.
-Several models can play together, each with its own playback limit. Click a
-playing model to stop just that siren, or press Stop all sirens. Filtering keeps
-active sirens playing. Switching tabs or changing the source or duration stops
-all sirens. Volume and a 1–5 second powered-time setting are available for fake Attack sirens, in addition to wind-up and coast-down. Fire and Alert always finish their ten-wind-up sequences.
+**Sound source** selects Fake or Real sounds. **Play multiple sounds** defaults
+on; click different models to layer them, or uncheck it for one sound at a time.
+Buttons always say **Play sound** when idle and **Stop** while playing.
 
-Add real sounds under `public/sounds/sirens/`, with the filenames shown on each
-model button. For example:
+Fake signal patterns:
 
-```text
-public/sounds/sirens/whelen-wps-2901.mp3
-public/sounds/sirens/federal-signal-thunderbolt-1000t.mp3
-```
+| Mode | Powered pattern | Final coast | Complete cycle |
+| --- | --- | --- | --- |
+| Attack | 10 wind-ups: 3 seconds up, 1 second at full speed, 2-second dips between rises | 18 seconds | 76 seconds |
+| Fire | 10 fast wails: 1.5 seconds up, 0.5 seconds at full speed, 1.5-second shallow dips | 18 seconds | 51.5 seconds |
+| Alert | 10 slower wind-ups: 4 seconds up, 10.7 seconds at full speed, 3-second dips | 24 seconds | 198 seconds |
+| Test (soundboard tap) | Short 0.8-second growl wind-up | 2.2 seconds | 3 seconds |
 
-WAV, OGG, and M4A are also supported, in that order after MP3. Use **Refresh sound
-files** after adding files. No recordings are included.
+Attack/Alert/Fire keep the rotor turning during intermediate dips. Fire bottoms
+out at 60% speed rather than repeatedly slowing nearly to a stop. Full wind-down
+only occurs at completion or Cancel. Loop repeats a complete signal sequence.
+These fixed cycles ignore the former short powered-time limit.
 
-Model references include [Whelen's WPS2900 catalog](https://www.whelenmassnotification.com/omni-directional/wps2900-series),
-[Whelen's WPS4000 catalog](https://www.whelenmassnotification.com/rotating/wps4000-series),
-and [Federal Signal's outdoor warning brochure](https://www.fedsig.com/sites/default/files/resource_library_document/ANS%20Capaiblites%20brochure%20ANS200.pdf).
+Volume is remembered across reloads. Zero mutes all real/fake sirens, including
+loops. The master output reaches exact silence after a brief click-prevention
+ramp. Fake waveform starts/stops are smoothed; there are no activation sounds.
 
-## Web development and screen tester
-
-```bash
-npm run dev web
-# Equivalent:
-npm run dev:web
-```
-
-Opens `http://127.0.0.1:5199/dev-preview.html`, using the same responsive preview
-as Sentence Maker. Defaults to **Current device**, filling the available browser
-area and following window resizing or device rotation. Includes phone, tablet, foldable, laptop, desktop, 4K,
-rotation, custom dimensions, simulated cutouts/safe areas, and overflow checks.
-Open `http://127.0.0.1:5199/` for the app without the tester. Plain `npm run dev`
-continues to launch Electron. If port 5199 is occupied, stop the other server or
-run `npm run dev -- web --port 5299` to use another port.
-
-The web app supports local MP3 uploads and in-app playback volume; Electron
-retains its system volume and native file picker. Custom files stored in browser
-storage are subject to the browser's storage limit.
-
-```bash
-npm run build:web
-node --test scripts/sirens.test.mjs
-```
-
-On mobile (up to 760 CSS pixels wide), each tab opens to its soundboard. Keyboard
-buttons have 12 items per page; sirens have 6. Previous/Next changes the visible
-buttons without stopping sirens. **Settings** contains volume, playback options, and model search. The Sirens
-soundboard keeps Real/Fake sounds and Manufacturer dropdowns visible, alongside
-a **Play multiple sounds** checkbox (on by default). With it checked, tap several
-models to layer them; uncheck it to play one at a time.
-**Custom Combos** has its own mobile page in Keyboard. Desktop shows the full
-layout and all model buttons together.
-
-**Tab through sounds only** is enabled by default and saved across sessions.
-Tab and Shift+Tab wrap through visible sound buttons in the current tab and
-mobile page, skipping other controls. Enter or Space activates the focused
-button. Turn the setting off for standard browser tab navigation. Find this
-checkbox above the desktop content, or on the mobile Settings page.
-
-**Loop sounds** in the top toolbar repeats playing sounds until stopped. It
-works with real files and fake sirens, and repeats each sound at its playback
-limit (or earlier if the recording ends). Uncheck Loop to finish the current
-cycle. Use each siren button to stop that siren, or Stop all to silence the board.
-Keyboard and Mouse audio also support looping and their Stop all sounds button.
-
-Use **▴ Hide controls** for a soundboard view without the header, tabs, settings,
-or filters. Loop and Stop remain available. **▾ Show controls** restores the full
-view without interrupting playback.
-
-The **Siren mode** dropdown offers **Attack** (rising/falling wail), **Alert**
-(ten slower full wind-ups), **Fire** (ten faster full wind-ups), and **Test / Growl**
-(a short low growl with 0.8 seconds of wind-up and 2.2 seconds of coast-down).
-These fake-mode patterns are illustrative rather than standardized emergency
-signals or exact reproductions. Loop repeats the selected pattern. Changing
-mode stops active sounds so the next model plays the newly selected pattern.
-
-For Real sounds, add mode-specific recordings, for example:
+Real recordings live under `public/sounds/sirens/`, using the filename on each
+model button. Examples:
 
 ```text
 public/sounds/sirens/whelen-wps-2901-attack.mp3
@@ -147,67 +89,60 @@ public/sounds/sirens/whelen-wps-2901-fire.mp3
 public/sounds/sirens/whelen-wps-2901-test.mp3
 ```
 
-The filenames displayed on the buttons follow the selected mode. WAV, OGG, and
-M4A also work. Attack accepts the original model-only filename as a fallback;
-other modes require their own files so they do not play an unrelated recording.
-Real recordings play in full so any recorded wind-up and wind-down are preserved.
+MP3, WAV, OGG, and M4A are checked in that order. Attack also accepts the original
+model-only filename, such as `whelen-wps-2901.mp3`. Other modes require their own
+recording. Real sounds play complete files; Loop repeats at the file's end.
+**Refresh sound files** updates availability after files are added.
 
-## Cabinet simulator
+Model references: [Whelen WPS2900](https://www.whelenmassnotification.com/omni-directional/wps2900-series),
+[Whelen WPS4000](https://www.whelenmassnotification.com/rotating/wps4000-series),
+[Federal Signal outdoor warning brochure](https://www.fedsig.com/sites/default/files/resource_library_document/ANS%20Capaiblites%20brochure%20ANS200.pdf).
 
-Press and hold a siren model for about half a second to open its control cabinet.
-A normal tap still plays/stops the sound. Moving your finger to scroll cancels
-the hold. On desktop, right-click the model or focus it and press **F2**.
+## Cabinet simulator and resume
 
-The simulator follows the reference cabinet: a yellow metal enclosure, civil
-defense emblem, power/signal lamps, and five colored **Test**, **Alert**, **Fire**,
-**Attack**, and **Cancel** buttons. It displays the selected make and model.
-Opening it is silent; a mode button starts that siren. Test uses the short growl.
-Cancel stops playback; changing mode restarts the model with the new pattern.
-Sound source, volume, and Loop controls use the same settings as the soundboard.
-Missing real recordings show their expected filename instead of generating audio.
+Hold a model for about half a second, right-click it, or focus it and press F2 to
+open the yellow control-cabinet simulator. A normal tap plays/stops the model;
+moving to scroll cancels the hold. Opening the cabinet is silent.
 
-**← Soundboard** or **Escape** closes the cabinet and stops its sounds. The modal
-keeps focus inside the simulator; sound-only Tab navigation cycles its four mode
-buttons, and focus returns to the model when the cabinet closes. The cabinet
-fits narrow screens and scrolls vertically when needed.
+The cabinet follows the reference with a civil-defense emblem, colored Test,
+Alert, Fire, Attack, and Cancel buttons, lamps, and the selected make/model.
+Source, volume, and Loop controls use the same settings as the soundboard.
 
-## Complete motor cycles
+**Cancel** immediately releases the active button and switches the signal lamp
+off while the rotor coasts. Clicking that same signal again during coast-down
+reuses the existing rotor and its current speed. It accelerates back to the
+next full-speed part of the remaining sequence instead of starting from rest
+or resetting the whole sequence. Real recordings keep their current position
+when resumed before their short cancellation fade finishes.
 
-Fake sirens wind up from a low rotor pitch and coast all the way down to silence.
-Attack adds 3 seconds of wind-up and 4 seconds of coast-down around the
-selected **Powered time** (1–5 seconds). Fire performs ten complete rises to full
-speed, each with a 2-second rise, a 2.25-second full-speed hold, and a 1.5-second
-dip between rises, followed by a 4-second final coast (**1 minute total**). Alert
-performs the same ten rises more slowly: 4 seconds up, a 10.7-second full-speed
-hold, 3 seconds between rises, then a 6-second final coast (**3 minutes total**). These sequences ignore the short powered-time selector so
-the final rise is never cut off. Test / Growl uses a short 0.8-second rise and 2.2-second coast, without a
-powered hold. Loop restarts only after the complete motor cycle finishes.
+**Test is hold-to-run** in the cabinet: mouse/touch or Space/Enter powers the
+rotor while held, with no automatic cutoff. Release to coast down; hold again to
+reapply power from the current speed. Test retains its earlier faster coast
+(about 4 seconds from full speed), independent of the longer signal coast-downs.
+A short hold produces a lower growl. Releasing overrides Loop. Pointer cancel,
+focus/window loss, or page hiding also releases Test. Real Test audio repeats
+while held and fades on release; it cannot synthesize motor behavior from a file.
 
-Clicking a playing siren or using **Cancel / Stop all sirens** removes motor power
-and lets simulated rotors coast down from their current pitch. The signal light
-stays on while the sound is audible. Volume zero still mutes immediately after
-the brief click-prevention ramp. Leaving the tab, closing the simulator, changing
-mode/source, or switching playback settings stops audio promptly.
+Back or Escape closes the cabinet and promptly stops audio. Changing mode or
+source also stops old playback; continuing the same cancelled mode preserves
+the rotor. Tab navigation remains scoped to cabinet sound buttons while open,
+and focus returns to the model on closing.
 
-Real sounds play complete recordings; the powered-time selector is disabled in
-Real sounds mode. Loop repeats the complete file. Explicitly cancelling a real
-recording fades it out briefly; the app cannot generate a physical rotor coast
-from an arbitrary recording.
+## Layout and navigation
 
-In the cabinet simulator, **Test is a momentary hold-to-run button**. Hold it with
-a mouse or finger, or focus it and hold Space/Enter. The fake rotor accelerates
-for 3 seconds and stays at full speed indefinitely while held. Release to remove
-power and coast down from the current speed; brief holds give low growls. Loop
-never restarts a released Test. Pointer cancellation, focus loss, window blur,
-and switching away from the page also release the control. Real Test recordings
-repeat while held and fade out on release. The regular soundboard Test mode
-still plays its short complete growl cycle when tapped.
+Mobile opens directly to the soundboard. Keyboard shows 12 buttons per page and
+Sirens shows 6; Previous/Next does not stop sirens. Settings and Custom Combos
+have separate mobile pages. Desktop shows the full layout.
 
-Holding Test again while a rotor is coasting reapplies power to the **same
-rotor**, preserving its current pitch, speed, and volume. It accelerates from
-that speed instead of starting from zero. You can repeatedly hold, release,
-let it slow, and hold again. Test can also take manual power control of the
-currently running simulated signal without constructing another sound or
-resetting the model. Real recordings keep their playback position when Test
-is pressed again during their release fade. Once a sound has fully finished,
-the next hold starts a new rotor or recording normally.
+**Tab through sounds only** defaults on and is remembered. Tab/Shift+Tab cycle
+visible sound buttons in the current board/page. Enter/Space activates them.
+Turn it off for normal browser navigation through all controls.
+
+**Hide controls** collapses headers, tabs, and settings; **Show controls** restores
+them. Loop and Stop remain accessible. Text highlighting and touch text callouts
+are disabled throughout the app, including text fields; typing still works.
+
+The tests cover synthesized motor timing/continuity, Cancel/resume, mute/loops,
+placeholder buffers and board controls, recording lookup, gestures, pagination,
+and keyboard focus. Audio tests use controlled backends; listening on real
+hardware remains useful for evaluating how the simulations sound.

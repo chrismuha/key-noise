@@ -36,7 +36,7 @@ test('simulated playback schedules a limit, handles live volume, and stops only 
   let ended = 0;
   const playback = startSimulatedSiren(context, sirens[0], { duration: 5, volume: .25, onEnded: () => ended++ });
   assert.equal(nodes[3].started, 2);
-  assert.equal(playback.scheduledEnd, 14.02);
+  assert.equal(playback.scheduledEnd, 78.02);
   playback.setVolume(.5);
   assert.ok(events.some(event => event[0] === 'setValueAtTime' && event[1] === .5));
   playback.stop(); playback.stop();
@@ -71,7 +71,7 @@ async function soundboard(loop = false) {
     } },
     findSound: async () => ({ url: './example.mp3', fileName: 'example.mp3' }),
     startSimulatedSiren(context, siren, options) {
-      const preview = { resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
+      const preview = { resumeSignal() { this.signalResumes = (this.signalResumes || 0) + 1; return true; }, resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
       previews.push(preview);
       return preview;
     },
@@ -242,7 +242,7 @@ test('all four fake modes have distinct pitch patterns and Test is a brief low g
   }
   const modes = ['attack', 'alert', 'fire', 'test'].map(render);
   assert.equal(new Set(modes.map(oscillator => JSON.stringify(oscillator.frequency.points))).size, 4);
-  assert.equal(modes[3].end, 3.02);
+  assert.ok(Math.abs(modes[3].end - 3.02) < 1e-9);
   const peaks = modes.map(oscillator => Math.max(...oscillator.frequency.points.map(point => point[0])));
   assert.ok(peaks[3] < peaks[0]);
   assert.ok(modes[1].end > modes[2].end, 'Alert must run its ten wind-ups more slowly than Fire');
@@ -417,7 +417,7 @@ test('cabinet Test handles pointer and keyboard holds without a second activatio
   assert.deepEqual(emitted, [['test-start'], ['test-end']]);
 });
 
-test('Fire and Alert always complete exactly ten full-speed wind-ups before coasting', () => {
+test('Attack, Fire, and Alert complete exactly ten full-speed wind-ups before coasting', () => {
   function render(mode, duration) {
     const oscillators = [];
     const parameter = () => ({ points: [], setValueAtTime() {}, linearRampToValueAtTime(value, time) { this.points.push([value, time]); }, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
@@ -429,7 +429,7 @@ test('Fire and Alert always complete exactly ten full-speed wind-ups before coas
   const fire = render('fire', 1);
   const alert = render('alert', 1);
   assert.ok(alert.cycle.windUp > fire.cycle.windUp);
-  for (const mode of ['fire', 'alert']) {
+  for (const mode of ['attack', 'fire', 'alert']) {
     const { cycle, oscillator } = render(mode, 1);
     const points = oscillator.frequency.points;
     const fullSpeed = Math.max(...points.map(point => point[0]));
@@ -448,7 +448,7 @@ test('Fire and Alert always complete exactly ten full-speed wind-ups before coas
     assert.ok(Math.abs(peaks.at(-1).end - lastPeakTime) < .001);
     assert.equal(points.at(-1)[0], 20);
     assert.equal(oscillator.end, lastPeakTime + cycle.windDown + .02);
-    assert.equal(oscillator.end, (mode === 'fire' ? 60 : 180) + .02);
+    assert.equal(oscillator.end, (mode === 'fire' ? 51.5 : mode === 'attack' ? 76 : 198) + .02);
     assert.equal(render(mode, 5).oscillator.end, oscillator.end, 'powered-time setting must not truncate the sequence');
   }
 });
@@ -524,4 +524,102 @@ test('Cancel releases the activated cabinet button immediately while the rotor c
   assert.equal(board.playing.value.size, 1, 'audio remains tracked during its coast');
   previews[0].end();
   assert.equal(board.playing.value.size, 0);
+});
+
+test('full-speed release coasts slowly at first, stays continuous, and reaches exact silence', () => {
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+  const playback = startSimulatedSiren(context, sirens[0], { duration: 1, volume: 1, mode: 'attack', onEnded() {} });
+  context.currentTime = 3;
+  playback.stop();
+  assert.equal(playback.speed, 1);
+  context.currentTime = 4;
+  assert.ok(playback.speed > .98, 'do not plunge in pitch during the first second');
+  context.currentTime = 12;
+  assert.ok(Math.abs(playback.speed - .5) < 1e-9);
+  context.currentTime = 20;
+  assert.ok(playback.speed > 0 && playback.speed < .02, 'retain a low tail instead of cutting off');
+  context.currentTime = 21;
+  assert.equal(playback.speed, 0);
+});
+
+test('cancelled Attack, Fire, and Alert resume the same motor at its current speed', () => {
+  for (const mode of ['attack', 'fire', 'alert']) {
+    let oscillatorCount = 0;
+    const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+    const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+    const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator() { oscillatorCount++; return node(); } };
+    const motor = startSimulatedSiren(context, sirens[0], { duration: 5, volume: 1, mode, onEnded() {} });
+    context.currentTime = motor.cycle.windUp + .1;
+    motor.stop(); context.currentTime += 2;
+    const coastingSpeed = motor.speed;
+    assert.ok(coastingSpeed > 0);
+    assert.equal(motor.resumeSignal(), true);
+    assert.equal(motor.speed, coastingSpeed, mode);
+    context.currentTime += .1;
+    assert.ok(motor.speed >= coastingSpeed, 're-powering must accelerate, not dive toward a trough');
+    assert.equal(oscillatorCount, 2);
+    motor.stop({ immediate: true });
+  }
+});
+test('running signal dips stay above rotor-stopping speeds until the final coast', () => {
+  for (const mode of ['attack', 'fire', 'alert']) {
+    const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+    const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+    const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+    const motor = startSimulatedSiren(context, sirens[0], { duration: 5, volume: 1, mode, onEnded() {} });
+    for (let time = motor.cycle.windUp; time < motor.cycle.windUp + motor.cycle.powered; time += .1) {
+      context.currentTime = time;
+      assert.ok(motor.speed >= motor.cycle.trough - 1e-8, mode);
+    }
+    if (mode === 'fire') assert.ok(motor.cycle.windUp + motor.cycle.peakHold + motor.cycle.dip < 4);
+  }
+});
+const { startPlaceholderSound } = await sourceModule('placeholder-sounds');
+test('keyboard and mouse fake sounds generate non-silent, click-free buffers and obey volume/loop/stop', () => {
+  for (const kind of ['keyboard', 'mouse']) {
+    let samples; let source;
+    const gain = { value: 1, setValueAtTime(value) { this.value = value; }, cancelScheduledValues() {} };
+    const context = { currentTime: 0, sampleRate: 48000, destination: {}, createBuffer(channels, size) { samples = new Float32Array(size); return { getChannelData: () => samples }; }, createGain() { return { gain, connect() {}, disconnect() {} }; }, createBufferSource() { source = { connect() {}, disconnect() {}, start() {}, stop() { this.onended(); } }; return source; } };
+    let ended = 0;
+    const player = startPlaceholderSound(context, { number: 2, kind, volume: 0, loop: true, onEnded() { ended++; } });
+    assert.ok(samples.some(value => Math.abs(value) > .01));
+    assert.equal(samples[0], 0);
+    assert.ok(Math.abs(samples.at(-1)) < 1e-8);
+    assert.equal(gain.value, 0);
+    assert.equal(source.loop, true);
+    player.setVolume(1); assert.equal(gain.value, 1);
+    player.setLoop(false); assert.equal(source.loop, false);
+    player.stop(); assert.equal(gain.value, 0); assert.equal(ended, 1);
+  }
+});
+test('Keyboard and Mouse default to independent fake sources with live mute and Stop all', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const { ref, computed, watch, nextTick } = await import('vue');
+  const script = (await readFile(new URL('../src/App.vue', import.meta.url), 'utf8')).split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
+  const players = [];
+  const state = runInNewContext(`${script}\n;({ activeTab, keyboardSoundSource, mouseSoundSource, playSound, playMouseButton, systemVolume, loopSounds, stopAllAudio, statusText, lastSound })`, {
+    ref, computed, watch, onMounted() {}, onBeforeUnmount() {},
+    localStorage: { getItem() { return null; }, setItem() {} },
+    window: { AudioContext: class { state = 'running'; }, setTimeout() { return 0; }, clearTimeout() {}, clearInterval() {} },
+    startPlaceholderSound(context, options) { const player = { ...options, setVolume(value) { this.volume = value; }, setLoop(value) { this.loop = value; }, stop() { this.stopped = true; } }; players.push(player); return player; }
+  });
+  assert.equal(state.keyboardSoundSource.value, 'fake');
+  assert.equal(state.mouseSoundSource.value, 'fake');
+  await state.playSound(1);
+  assert.equal(players[0].kind, 'keyboard');
+  state.systemVolume.value = 0; await nextTick();
+  assert.equal(players[0].volume, 0);
+  state.loopSounds.value = true; await nextTick();
+  assert.equal(players[0].loop, true);
+  state.stopAllAudio(); assert.equal(players[0].stopped, true);
+  state.keyboardSoundSource.value = 'real'; await nextTick();
+  assert.match(state.statusText.value, /^Add files named/);
+  state.activeTab.value = 'mouse'; await nextTick();
+  await state.playMouseButton({ soundNumber: 2, label: 'Right Click' });
+  assert.equal(players[1].kind, 'mouse');
+  assert.equal(players[1].volume, 0);
+  assert.equal(state.mouseSoundSource.value, 'fake');
+  state.stopAllAudio();
 });

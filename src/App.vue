@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Sirens from './Sirens.vue';
+import { startPlaceholderSound } from './placeholder-sounds';
 import { cycleSoundFocus } from './sound-focus';
 
 const maxSoundSlots = 64;
@@ -37,12 +38,16 @@ const tabSoundsOnly = ref(loadSoundTabSetting());
 const loopSounds = ref(false);
 const headerCollapsed = ref(false);
 const activeAudio = new Map();
+const placeholderPlayers = new Set();
 let audioGeneration = 0;
 function toggleHeader() {
   headerCollapsed.value = !headerCollapsed.value;
   if (headerCollapsed.value) mobilePage.value = 'soundboard';
 }
-watch(loopSounds, (value) => { for (const audio of activeAudio.keys()) audio.loop = value; });
+watch(loopSounds, (value) => {
+  for (const audio of activeAudio.keys()) audio.loop = value;
+  for (const player of placeholderPlayers) player.setLoop(value);
+});
 function stopAllAudio() {
   audioGeneration++;
   for (const [audio, timer] of activeAudio) {
@@ -51,6 +56,8 @@ function stopAllAudio() {
     audio.currentTime = 0;
   }
   activeAudio.clear();
+  for (const player of placeholderPlayers) player.stop();
+  placeholderPlayers.clear();
   resetMeterSoon();
 }
 
@@ -58,6 +65,23 @@ function saveSoundTabSetting() {
   try { localStorage.setItem('key-noise-tab-sounds-only', tabSoundsOnly.value ? 'on' : 'off'); } catch { /* Keep working for this session. */ }
 }
 const activeTab = ref('keyboard');
+function savedSource(key) {
+  try { return localStorage.getItem(key) === 'real' ? 'real' : 'fake'; } catch { return 'fake'; }
+}
+const keyboardSoundSource = ref(savedSource('key-noise-keyboard-source'));
+const mouseSoundSource = ref(savedSource('key-noise-mouse-source'));
+const activeSoundSource = computed({
+  get: () => activeTab.value === 'mouse' ? mouseSoundSource.value : keyboardSoundSource.value,
+  set: value => { if (activeTab.value === 'mouse') mouseSoundSource.value = value; else keyboardSoundSource.value = value; }
+});
+watch([keyboardSoundSource, mouseSoundSource], () => {
+  stopAllAudio();
+  try {
+    localStorage.setItem('key-noise-keyboard-source', keyboardSoundSource.value);
+    localStorage.setItem('key-noise-mouse-source', mouseSoundSource.value);
+  } catch { /* Sources remain usable for this session. */ }
+});
+watch(activeTab, stopAllAudio);
 const mobilePage = ref('soundboard');
 const keyboardPage = ref(1);
 const isMobile = ref(false);
@@ -73,6 +97,10 @@ const missingSounds = ref(new Set());
 const isArmed = ref(false);
 const systemVolume = ref(100);
 const systemVolumeSupported = ref(true);
+watch(systemVolume, value => {
+  for (const player of placeholderPlayers) player.setVolume(value / 100);
+  if (!window.keyNoiseApi) for (const audio of activeAudio.keys()) audio.volume = value / 100;
+});
 const soundLimitValue = ref(defaultPlaybackSettings.soundLimitValue);
 const soundLimitUnit = ref(defaultPlaybackSettings.soundLimitUnit);
 const mouseSoundLimitValue = ref(defaultPlaybackSettings.soundLimitValue);
@@ -148,6 +176,7 @@ const activeSoundLimitText = computed(() => {
   return '5 seconds max';
 });
 const statusText = computed(() => {
+  if (activeSoundSource.value === 'fake') return activeTab.value === 'mouse' ? '2 mouse sounds ready' : `${keys.length} keyboard sounds ready`;
   if (activeTab.value === 'mouse') {
     const readyCount = mouseBindings.value.filter((binding) => loadedSounds.value.has(binding.soundNumber)).length;
 
@@ -453,7 +482,28 @@ async function scanSounds() {
   missingSounds.value = missing;
 }
 
+async function playPlaceholder(number, kind, limitMs) {
+  const generation = audioGeneration;
+  try {
+    const context = getAudioContext();
+    if (!context) throw new Error('Audio unavailable');
+    if (context.state !== 'running') await context.resume();
+    if (generation !== audioGeneration) return;
+    let player;
+    player = startPlaceholderSound(context, { number, kind, limitMs, volume: systemVolume.value / 100, loop: loopSounds.value, onEnded: () => placeholderPlayers.delete(player) });
+    placeholderPlayers.add(player);
+    isArmed.value = true;
+    lastSound.value = `Sound ${number}`;
+    meterLevels.value = meterLevels.value.map((_, index) => .2 + ((number + index) % 7) / 10);
+    resetMeterSoon(Math.min(limitMs, 240));
+  } catch { lastSound.value = 'Could not start audio. Try the sound button again.'; }
+}
+
 async function playSound(soundNumber) {
+  if (keyboardSoundSource.value === 'fake') {
+    lastKey.value = keys[soundNumber - 1] || `Sound ${soundNumber}`;
+    return playPlaceholder(soundNumber, 'keyboard', soundLimitMs.value);
+  }
   const sources = buildSoundSources(soundNumber);
 
   for (const source of sources) {
@@ -476,6 +526,10 @@ async function playSound(soundNumber) {
 }
 
 async function playMouseButton(binding) {
+  if (mouseSoundSource.value === 'fake') {
+    lastKey.value = binding.label;
+    return playPlaceholder(binding.soundNumber, 'mouse', mouseSoundLimitMs.value);
+  }
   const sources = buildSoundSources(binding.soundNumber);
 
   for (const source of sources) {
@@ -560,6 +614,10 @@ async function chooseCustomMp3(pad) {
 }
 
 async function playCustomPad(pad) {
+  if (keyboardSoundSource.value === 'fake') {
+    lastKey.value = pad.combo || `Custom ${pad.id}`;
+    return playPlaceholder(keys.length + pad.id, 'keyboard', soundLimitMs.value);
+  }
   if (!pad.fileUrl) {
     lastSound.value = `Custom ${pad.id} needs an MP3`;
     return;
@@ -721,6 +779,7 @@ onBeforeUnmount(() => {
   <main class="app" :class="{ 'board-only': headerCollapsed }" :data-mobile-page="mobilePage">
     <div class="soundboard-toolbar">
       <button class="collapse-header" type="button" :aria-expanded="!headerCollapsed" :aria-label="headerCollapsed ? 'Show header and controls' : 'Hide header and controls'" @click="toggleHeader">{{ headerCollapsed ? '▾ Show controls' : '▴ Hide controls' }}</button>
+      <label v-if="activeTab !== 'sirens'" class="settings-field board-source"><span>Sound source</span><select v-model="activeSoundSource"><option value="fake">Fake sounds</option><option value="real">Real sounds</option></select></label>
       <label class="loop-option"><input v-model="loopSounds" type="checkbox" /><span>Loop sounds</span></label>
       <button v-if="activeTab !== 'sirens'" class="stop-siren" type="button" @click="stopAllAudio">Stop all sounds</button>
     </div>
@@ -835,7 +894,7 @@ onBeforeUnmount(() => {
         @click="playSound(binding.soundNumber)"
       >
         <span>{{ binding.key }}</span>
-        <small>{{ binding.fileName }}</small>
+        <small>{{ activeSoundSource === 'fake' ? 'Play sound' : binding.fileName }}</small>
       </button>
 
       <button
@@ -865,7 +924,7 @@ onBeforeUnmount(() => {
         @contextmenu.prevent
       >
         <span>{{ binding.label }}</span>
-        <small>{{ binding.fileName }}</small>
+        <small>{{ activeSoundSource === 'fake' ? 'Play sound' : binding.fileName }}</small>
       </button>
     </section>
 
