@@ -17,7 +17,14 @@ function updateMobileLayout() { isMobile.value = mobileMedia.matches; }
 const manufacturer = ref('All manufacturers');
 const search = ref('');
 const duration = ref(5);
-const volume = ref(25);
+function savedVolume() {
+  try {
+    const saved = localStorage.getItem('key-noise-siren-volume');
+    const value = Number(saved);
+    return saved !== null && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 25;
+  } catch { return 25; }
+}
+const volume = ref(savedVolume());
 const playing = ref(new Set());
 const status = ref('Choose a model to play.');
 const available = ref(new Set());
@@ -40,6 +47,18 @@ const boardPageCount = computed(() => Math.max(1, Math.ceil(filtered.value.lengt
 const visibleSirens = computed(() => isMobile.value ? filtered.value.slice((boardPage.value - 1) * 6, boardPage.value * 6) : filtered.value);
 watch([manufacturer, search], () => { boardPage.value = 1; });
 let context;
+let masterVolume;
+async function getAudioOutput() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  context ||= new AudioContext();
+  if (!masterVolume) {
+    masterVolume = context.createGain();
+    masterVolume.gain.setValueAtTime(volume.value / 100, context.currentTime);
+    masterVolume.connect(context.destination);
+  }
+  if (context.state !== 'running') await context.resume();
+  return masterVolume;
+}
 let disposed = false;
 function finish(id, session) {
   if (sessions.get(id) !== session) return;
@@ -49,6 +68,7 @@ function finish(id, session) {
   if (session.audio) {
     session.audio.onended = null;
     session.audio.onerror = null;
+    session.source?.disconnect();
     session.audio.pause();
     session.audio.removeAttribute('src');
     session.audio.load();
@@ -81,14 +101,12 @@ async function play(siren) {
   const current = () => !disposed && sessions.get(siren.id) === session;
   if (simulated.value) {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      context ||= new AudioContext();
-      if (context.state !== 'running') await context.resume();
+      const destination = await getAudioOutput();
       if (!current()) return;
       const startPreview = () => {
         if (!current()) return;
         session.simulation = startSimulatedSiren(context, siren, {
-          duration: duration.value, volume: volume.value / 100,
+          duration: duration.value, volume: 1, destination,
           onEnded: () => {
             if (!current()) return;
             if (props.loopSounds) session.timer = window.setTimeout(startPreview, 0);
@@ -114,11 +132,15 @@ async function play(siren) {
   }
   const audio = new Audio(source.url);
   session.audio = audio;
-  audio.volume = volume.value / 100;
+  audio.volume = 1;
   audio.loop = props.loopSounds;
   audio.onended = () => { if (current()) { finish(siren.id, session); status.value = `${siren.model} finished.`; } };
   audio.onerror = () => { if (current()) { finish(siren.id, session); status.value = `Could not play ${source.fileName}. Check the audio file.`; } };
   try {
+    const destination = await getAudioOutput();
+    if (!current()) return;
+    session.source = context.createMediaElementSource(audio);
+    session.source.connect(destination);
     await audio.play();
     if (!current()) { audio.pause(); return; }
     available.value.add(siren.id);
@@ -144,11 +166,13 @@ watch(() => props.loopSounds, (value) => {
   for (const session of sessions.values()) if (session.audio) session.audio.loop = value;
 });
 watch(volume, (value) => {
-  for (const session of sessions.values()) {
-    if (session.audio) session.audio.volume = value / 100;
-    session.simulation?.setVolume(value / 100);
-  }
-});
+  try { localStorage.setItem('key-noise-siren-volume', String(value)); } catch { /* Session volume still works. */ }
+  if (!masterVolume) return;
+  const now = context.currentTime;
+  // A short finite ramp prevents clicks and reaches exact silence at zero.
+  masterVolume.gain.cancelAndHoldAtTime(now);
+  masterVolume.gain.linearRampToValueAtTime(value / 100, now + 0.01);
+}, { flush: 'sync' });
 watch(allowMultiple, () => { stop(); status.value = 'Choose a model to play.'; });
 watch([soundMode, duration], () => { stop(); status.value = 'Choose a model to play.'; });
 watch(soundMode, (value) => {
@@ -160,7 +184,7 @@ onMounted(() => {
   mobileMedia.addEventListener('change', updateMobileLayout);
   scan();
 });
-onBeforeUnmount(() => { disposed = true; mobileMedia?.removeEventListener('change', updateMobileLayout); stop(); context?.close(); });
+onBeforeUnmount(() => { disposed = true; mobileMedia?.removeEventListener('change', updateMobileLayout); stop(); masterVolume?.disconnect(); context?.close(); });
 </script>
 
 <template>
@@ -172,7 +196,7 @@ onBeforeUnmount(() => { disposed = true; mobileMedia?.removeEventListener('chang
     <div class="siren-controls">
       <label class="settings-field"><span>Search models or types</span><input v-model="search" type="search" placeholder="Try Thunderbolt or electronic" /></label>
       <label class="settings-field"><span>Playback limit</span><select v-model.number="duration"><option :value="1">1 second</option><option :value="2">2 seconds</option><option :value="3">3 seconds</option><option :value="4">4 seconds</option><option :value="5">5 seconds</option></select></label>
-      <label class="settings-field"><span>Siren volume · {{ volume }}%</span><input v-model.number="volume" aria-label="Siren volume" type="range" min="0" max="100" /></label>
+      <label class="settings-field"><span>Siren volume · {{ volume }}%</span><input v-model.number="volume" aria-label="Siren volume" type="range" min="0" max="100" step="1" /></label>
       <button class="stop-siren" type="button" :disabled="!playing.size" @click="stopButton">Stop all sirens</button>
       <button class="rescan-sirens" type="button" :disabled="scanning" @click="scan">{{ scanning ? 'Checking files…' : 'Refresh sound files' }}</button>
     </div>
@@ -187,7 +211,7 @@ onBeforeUnmount(() => { disposed = true; mobileMedia?.removeEventListener('chang
     <p class="siren-status" role="status">{{ playbackText }}</p>
     <div class="siren-grid">
       <button v-for="siren in visibleSirens" :key="siren.id" type="button" class="key siren-key" data-sound-button :class="{ loaded: playing.has(siren.id) || available.has(siren.id), missing: !simulated && !available.has(siren.id) }" :aria-pressed="playing.has(siren.id)" :aria-label="`${playing.has(siren.id) ? 'Stop' : 'Play'} ${siren.manufacturer} ${siren.model}`" @click="play(siren)">
-        <small>{{ siren.manufacturer }}</small><span>{{ siren.model }}</span><small>{{ siren.type }}</small><small class="siren-filename">{{ siren.id }}.mp3</small><strong>{{ playing.has(siren.id) ? '■ Stop' : simulated ? '▶ Fake sound' : available.has(siren.id) ? '▶ Play sound' : 'No sound file yet' }}</strong>
+        <small>{{ siren.manufacturer }}</small><span>{{ siren.model }}</span><small>{{ siren.type }}</small><small class="siren-filename">{{ siren.id }}.mp3</small><strong>{{ playing.has(siren.id) ? '■ Stop' : '▶ Play sound' }}</strong>
       </button>
     </div>
     <nav class="board-pagination mobile-only" aria-label="Siren sound pages">

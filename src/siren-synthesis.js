@@ -1,23 +1,27 @@
 // Illustrative audio only: these profiles do not reproduce exact model recordings.
-export function startSimulatedSiren(context, siren, { duration, volume, onEnded }) {
+export function startSimulatedSiren(context, siren, { duration, volume, onEnded, destination = context.destination }) {
   const start = context.currentTime;
   const end = start + duration;
   const seed = [...siren.id].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
   const frequency = 400 + seed % 180;
   const output = context.createGain();
+  const envelope = context.createGain();
   const filter = context.createBiquadFilter();
   filter.type = 'lowpass';
   filter.frequency.value = 2400;
-  filter.connect(output);
-  output.connect(context.destination);
+  filter.connect(envelope);
+  envelope.connect(output);
+  output.connect(destination);
+  // Normalize the two voices and fade the waveform itself, independently of volume.
+  envelope.gain.setValueAtTime(0, start);
+  envelope.gain.linearRampToValueAtTime(0.5, start + 0.02);
+  envelope.gain.setValueAtTime(0.5, end - 0.02);
+  envelope.gain.linearRampToValueAtTime(0, end);
   function setVolume(value) {
-    const now = context.currentTime;
-    output.gain.cancelScheduledValues(now);
-    output.gain.setTargetAtTime(value * 0.18, now, 0.03);
-    output.gain.setValueAtTime(value * 0.18, Math.max(now, end - 0.15));
-    output.gain.linearRampToValueAtTime(0, end);
+    const normalized = Math.max(0, Math.min(1, Number(value) || 0));
+    output.gain.cancelScheduledValues(context.currentTime);
+    output.gain.setValueAtTime(normalized, context.currentTime);
   }
-  output.gain.setValueAtTime(0, start);
   setVolume(volume);
   const oscillators = [1, /1000T|1003|STL|2T/.test(siren.model) ? 1.25 : 1.5].map((ratio) => {
     const oscillator = context.createOscillator();
@@ -32,14 +36,25 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded 
     return oscillator;
   });
   let stopped = false;
-  function stop() {
-    if (stopped) return;
-    stopped = true;
-    oscillators.forEach((oscillator) => { oscillator.onended = null; oscillator.stop(); oscillator.disconnect(); });
+  let cleaned = false;
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    oscillators.forEach((oscillator) => { oscillator.onended = null; oscillator.disconnect(); });
     filter.disconnect();
+    envelope.disconnect();
     output.disconnect();
     onEnded();
   }
-  oscillators[0].onended = stop;
+  function stop() {
+    if (stopped || cleaned) return;
+    stopped = true;
+    const now = context.currentTime;
+    // Hold the current envelope before fading, so stopping never cuts a waveform abruptly.
+    envelope.gain.cancelAndHoldAtTime(now);
+    envelope.gain.linearRampToValueAtTime(0, now + 0.015);
+    oscillators.forEach(oscillator => oscillator.stop(now + 0.02));
+  }
+  oscillators[0].onended = cleanup;
   return { stop, setVolume };
 }

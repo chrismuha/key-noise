@@ -29,16 +29,17 @@ test('missing files reject Vite HTML fallback and allow a later supported audio 
 test('simulated playback schedules a limit, handles live volume, and stops only once', () => {
   const nodes = [];
   const events = [];
-  function parameter() { return Object.fromEntries(['cancelScheduledValues', 'setValueAtTime', 'setTargetAtTime', 'linearRampToValueAtTime'].map(method => [method, (...args) => events.push([method, ...args])])); }
+  function parameter() { return Object.fromEntries(['cancelAndHoldAtTime', 'cancelScheduledValues', 'setValueAtTime', 'setTargetAtTime', 'linearRampToValueAtTime'].map(method => [method, (...args) => events.push([method, ...args])])); }
   function node() { const n = { connect() {}, disconnect() { this.disconnected = true; }, gain: parameter(), frequency: parameter(), start(t) { this.started = t; }, stop(t) { this.stopped = t; } }; nodes.push(n); return n; }
   const context = { currentTime: 2, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
   let ended = 0;
   const playback = startSimulatedSiren(context, sirens[0], { duration: 5, volume: .25, onEnded: () => ended++ });
-  assert.equal(nodes[2].started, 2);
-  assert.equal(nodes[2].stopped, 7);
+  assert.equal(nodes[3].started, 2);
+  assert.equal(nodes[3].stopped, 7);
   playback.setVolume(.5);
-  assert.ok(events.some(event => event[0] === 'setTargetAtTime' && event[1] === .09));
+  assert.ok(events.some(event => event[0] === 'setValueAtTime' && event[1] === .5));
   playback.stop(); playback.stop();
+  nodes[3].onended();
   assert.equal(ended, 1);
   assert.ok(nodes.every(n => n.disconnected));
 });
@@ -55,10 +56,19 @@ async function soundboard(loop = false) {
     defineProps: () => ({ loopSounds: loop }),
     ref, computed, watch, sirens, onMounted() {}, onBeforeUnmount() {},
     localStorage: { getItem() { return null; }, setItem() {} },
-    window: { clearTimeout, setTimeout, AudioContext: class { state = 'running'; close() {} } },
+    window: { clearTimeout, setTimeout, AudioContext: class {
+      state = 'running'; currentTime = 0; destination = {};
+      createGain() {
+        const gain = { value: 1, setValueAtTime(value) { this.value = value; }, cancelAndHoldAtTime() {}, linearRampToValueAtTime(value) { this.value = value; } };
+        this.output = { gain, connect() {}, disconnect() {} };
+        return this.output;
+      }
+      createMediaElementSource() { return { connect() {}, disconnect() {} }; }
+      close() {}
+    } },
     findSound: async () => ({ url: './example.mp3', fileName: 'example.mp3' }),
     startSimulatedSiren(context, siren, options) {
-      const preview = { stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
+      const preview = { destination: options.destination, initialVolume: options.volume, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
       previews.push(preview);
       return preview;
     },
@@ -69,7 +79,7 @@ async function soundboard(loop = false) {
       removeAttribute() {} load() {}
     }
   };
-  const board = runInNewContext(`${source}\n;({ play, stop, soundMode, playing, volume, readinessText, isMobile, boardPage, boardPageCount, visibleSirens, manufacturer, allowMultiple })`, sandbox);
+  const board = runInNewContext(`${source}\n;({ play, stop, soundMode, playing, volume, readinessText, isMobile, boardPage, boardPageCount, visibleSirens, manufacturer, allowMultiple, getMasterVolume: () => masterVolume })`, sandbox);
   return { board, previews, recordings, nextTick, sandbox };
 }
 test('fake sirens overlap and stopping or finishing one preserves the others', async () => {
@@ -78,7 +88,7 @@ test('fake sirens overlap and stopping or finishing one preserves the others', a
   assert.equal(board.playing.value.size, 2);
   assert.equal(previews[0].stopped, false);
   board.volume.value = 40; await nextTick();
-  assert.ok(previews.every(p => p.volume === .4));
+  assert.equal(board.getMasterVolume().gain.value, .4);
   await board.play(sirens[0]);
   assert.equal(board.playing.value.size, 1);
   assert.equal(previews[1].stopped, false);
@@ -178,4 +188,33 @@ test('real loops repeat at the configured limit and remain individually stoppabl
   assert.equal(board.playing.value.size, 1);
   assert.equal(recordings[1].paused, undefined);
   board.stop(); assert.equal(queued.size, 0);
+});
+
+test('fake sirens share an exact 0–100% master volume, including new loop cycles', async () => {
+  const { board, previews, sandbox } = await soundboard(true);
+  const queued = [];
+  sandbox.window.setTimeout = callback => { queued.push(callback); return queued.length; };
+  sandbox.window.clearTimeout = () => {};
+  await board.play(sirens[0]); await board.play(sirens[1]);
+  const output = board.getMasterVolume();
+  assert.ok(previews.every(preview => preview.destination === output));
+  board.volume.value = 0;
+  assert.equal(output.gain.value, 0);
+  previews[0].end(); queued.shift()();
+  assert.equal(previews.at(-1).destination, output);
+  assert.equal(output.gain.value, 0);
+  board.volume.value = 100;
+  assert.equal(output.gain.value, 1);
+  board.stop();
+});
+test('real sirens use the same zero and full-volume output as fake sirens', async () => {
+  const { board, recordings, nextTick } = await soundboard();
+  board.soundMode.value = 'real'; await nextTick();
+  board.volume.value = 0;
+  await board.play(sirens[0]); await board.play(sirens[1]);
+  assert.equal(board.getMasterVolume().gain.value, 0);
+  assert.ok(recordings.every(audio => audio.volume === 1));
+  board.volume.value = 100;
+  assert.equal(board.getMasterVolume().gain.value, 1);
+  board.stop();
 });

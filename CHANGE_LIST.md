@@ -1,5 +1,23 @@
 # key-noise Change List
 
+## October 29, 2026 — Siren Volume, Transitions, and Consistent Button Labels
+
+- Route real and fake sirens, overlapping voices, and loop restarts through one
+  master volume output. Zero reaches exact silence after a 10 ms fade; 100%
+  applies unity gain. Use Web Audio for real files so control does not depend on
+  browser support for changing an HTML audio element's volume.
+- Separate fake-siren volume from its attack/release envelope, normalize its
+  two voices, and fade starts and stops to reduce clicks. No activation sound
+  effects are added.
+- Save the siren volume across tab changes and reloads, including a zero setting.
+- Remove range-input padding/borders so the slider uses its full control width.
+- Label every idle siren button “▶ Play sound” for both Real and Fake sources,
+  including models awaiting sound files. Playing buttons show “■ Stop”; missing
+  real files still show the filename/folder guidance in the status message.
+- Add regression tests for muted and full-volume real/fake playback and muted
+  loop restarts. Automated audio tests use controlled backends; listening on
+  the user's device is still needed to confirm the reported sound is resolved.
+
 ## October 29, 2026 — Sirens, Mobile Soundboards, and Playback Controls
 
 ### Sirens soundboard

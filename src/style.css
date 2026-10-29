@@ -585,3 +585,5 @@ button, input, select { touch-action: manipulation; }
 .app.board-only .mobile-board-footer > p { display: none; }
 .app.board-only .bindings { margin-top: 0; }
 .app.board-only .mobile-stop-all { display: block; width: 100%; margin-top: 12px; }
+
+.siren-controls input[type='range'] { padding: 0; border: 0; background: transparent; cursor: pointer; }
