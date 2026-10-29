@@ -5,21 +5,24 @@ function coastCurve(progress) {
   return (1 - phase) ** 2 * (1 + 2 * phase);
 }
 export function sirenCycle(mode, duration) {
-  if (['attack', 'fire', 'alert'].includes(mode)) {
-    const windUp = mode === 'fire' ? 1.5 : mode === 'attack' ? 3 : 4;
-    const dip = mode === 'fire' ? 1.5 : mode === 'attack' ? 2 : 3;
-    const peakHold = mode === 'fire' ? 0.5 : mode === 'attack' ? 1 : 10.7;
-    const trough = mode === 'fire' ? 0.6 : mode === 'attack' ? 0.45 : 0.5;
+  if (mode === 'alert') return { windUp: 4, powered: 180, windDown: 60, peak: 1, trough: 1 };
+  if (['attack', 'fire'].includes(mode)) {
+    const windUp = mode === 'fire' ? 1.5 : 3;
+    // Federal PGA reference cadence: 8 seconds powered, 4 seconds coasting.
+    const dip = mode === 'fire' ? 1.5 : 4;
+    const peakHold = mode === 'fire' ? 0.5 : 5;
+    // Rotor depth is illustrative; timer specifications do not define pitch.
+    const trough = mode === 'fire' ? 0.6 : 0.70;
     const powered = Number((9 * (windUp + peakHold + dip) + peakHold).toFixed(6));
-    return { windUp, peakHold, dip, trough, surges: 10, powered, windDown: mode === 'alert' ? 24 : 18, peak: 1 };
+    return { windUp, peakHold, dip, trough, surges: 10, powered, windDown: 60, peak: 1 };
   }
   return { windUp: 0.8, powered: 0, windDown: 2.2, peak: 0.5 };
 }
 export function startSimulatedSiren(context, siren, { duration, volume, onEnded, destination = context.destination, mode = 'attack', held = false, setTimer = setTimeout, clearTimer = clearTimeout }) {
   const start = context.currentTime;
-  const cycle = held ? { windUp: 3, powered: Infinity, windDown: 4, peak: 1 } : sirenCycle(mode, duration);
-  const powerOff = cycle.windUp + cycle.powered;
-  const length = powerOff + cycle.windDown;
+  let cycle = held ? { windUp: 3, powered: Infinity, windDown: 4, peak: 1 } : sirenCycle(mode, duration);
+  let powerOff = cycle.windUp + cycle.powered;
+  let length = powerOff + cycle.windDown;
   const seed = [...siren.id].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
   const frequency = 400 + seed % 180;
   const output = context.createGain();
@@ -55,8 +58,8 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
       return cycle.peak * phase * phase * (3 - 2 * phase);
     }
     if (t < powerOff) return poweredSpeed(t - cycle.windUp);
-    const progress = Math.max(0, 1 - (t - powerOff) / cycle.windDown);
-    return poweredSpeed(cycle.powered) * Math.pow(progress, 1.6);
+    const progress = (t - powerOff) / cycle.windDown;
+    return poweredSpeed(cycle.powered) * (mode === 'test' ? Math.pow(Math.max(0, 1 - progress), 1.6) : coastCurve(progress));
   }
   function setVolume(value) {
     const normalized = Math.max(0, Math.min(1, Number(value) || 0));
@@ -85,7 +88,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
     }
   }
   envelope.gain.setValueAtTime(0, start);
-  const landmarks = cycle.surges
+  let landmarks = cycle.surges
     ? Array.from({ length: cycle.surges }, (_, index) => {
       const at = index * (cycle.windUp + cycle.peakHold + cycle.dip);
       return [at, at + cycle.windUp, Math.min(powerOff, at + cycle.windUp + cycle.peakHold)];
@@ -157,7 +160,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
     holdCurrent(now);
     stopped = false;
     manualPower = false;
-    let resumePosition = position;
+    let resumePosition = !cycle.surges ? (position >= powerOff ? cycle.windUp : Math.max(cycle.windUp, position)) : position;
     if (cycle.surges && position < powerOff) {
       const span = cycle.windUp + cycle.peakHold + cycle.dip;
       const pulse = Math.floor(position / span);
@@ -180,6 +183,41 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
     retireAt(now + remaining + 0.02);
     return true;
   }
+  function transitionSignal(nextMode, { held: nextHeld = false } = {}) {
+    if (cleaned || (scheduledEnd !== Infinity && context.currentTime >= scheduledEnd)) return false;
+    const now = context.currentTime;
+    const currentSpeed = motionAt(now);
+    holdCurrent(now);
+    clearTimer(retirementTimer);
+    mode = nextMode;
+    held = nextHeld;
+    cycle = held ? { windUp: 3, powered: Infinity, windDown: 4, peak: 1 } : sirenCycle(mode, duration);
+    powerOff = cycle.windUp + cycle.powered;
+    length = powerOff + cycle.windDown;
+    landmarks = cycle.surges ? Array.from({ length: cycle.surges }, (_, index) => {
+      const at = index * (cycle.windUp + cycle.peakHold + cycle.dip);
+      return [at, at + cycle.windUp, Math.min(powerOff, at + cycle.windUp + cycle.peakHold)];
+    }).flat() : [];
+    stopped = false;
+    manualPower = held;
+    pausedSignalPosition = null;
+    const difference = cycle.peak - currentSpeed;
+    const recovery = Math.max(0.2, (difference >= 0 ? cycle.windUp : cycle.windDown) * Math.abs(difference));
+    const ramp = elapsed => {
+      if (elapsed >= recovery) return held ? 1 : speedAt(cycle.windUp + elapsed - recovery);
+      const phase = Math.max(0, elapsed / recovery);
+      return currentSpeed + difference * phase * phase * (3 - 2 * phase);
+    };
+    motionAt = time => ramp(Math.max(0, time - now));
+    signalPositionAt = time => time < now + recovery
+      ? cycle.windUp * Math.max(0, time - now) / recovery : cycle.windUp + time - now - recovery;
+    const remaining = recovery + length - cycle.windUp;
+    scheduleSpeed(now, held ? recovery : remaining, ramp,
+      held ? [] : [recovery, ...landmarks.filter(t => t > cycle.windUp).map(t => t - cycle.windUp + recovery)]);
+    if (held) scheduledEnd = Infinity;
+    else retireAt(now + remaining + 0.02);
+    return true;
+  }
   function stop({ immediate = false } = {}) {
     if (cleaned || (stopped && !immediate)) return;
     stopped = true;
@@ -194,13 +232,23 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
     } else {
       const speed = motionAt(now);
       const fullCoast = manualPower ? 4 : cycle.windDown;
-      const coast = Math.max(1.5, fullCoast * Math.sqrt(Math.min(1, speed / (manualPower ? 1 : cycle.peak))));
-      const ramp = t => speed * (manualPower || mode === 'test' ? Math.pow(Math.max(0, 1 - t / coast), 1.6) : coastCurve(t / coast));
+      const originalCoast = Math.max(1.5, fullCoast * Math.sqrt(Math.min(1, speed / (manualPower ? 1 : cycle.peak))));
+      // Preserve the familiar first second of Test feathering, then let the rotor linger.
+      const lead = Math.min(1, originalCoast / 4);
+      const coast = manualPower ? Math.max(lead + 1.5, 45 * speed) : originalCoast;
+      const ramp = t => {
+        if (manualPower) {
+          if (t <= lead) return speed * Math.pow(Math.max(0, 1 - t / originalCoast), 1.6);
+          const remainingSpeed = speed * Math.pow(1 - lead / originalCoast, 1.6);
+          return remainingSpeed * coastCurve((t - lead) / (coast - lead));
+        }
+        return speed * (mode === 'test' ? Math.pow(Math.max(0, 1 - t / coast), 1.6) : coastCurve(t / coast));
+      };
       motionAt = time => ramp(Math.max(0, time - now));
-      scheduleSpeed(now, coast, ramp);
+      scheduleSpeed(now, coast, ramp, manualPower ? [lead] : []);
       retireAt(now + coast + 0.02);
     }
   }
   oscillators[0].oscillator.onended = cleanup;
-  return { stop, resume, resumeSignal, setVolume, cycle, get scheduledEnd() { return scheduledEnd; }, get speed() { return motionAt(context.currentTime); } };
+  return { stop, resume, resumeSignal, transitionSignal, setVolume, get cycle() { return cycle; }, get scheduledEnd() { return scheduledEnd; }, get speed() { return motionAt(context.currentTime); } };
 }

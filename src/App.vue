@@ -47,7 +47,7 @@ function toggleHeader() {
 watch(loopSounds, (value) => {
   for (const audio of activeAudio.keys()) audio.loop = value;
   for (const player of placeholderPlayers) player.setLoop(value);
-});
+}, { flush: 'sync' });
 function stopAllAudio() {
   audioGeneration++;
   for (const [audio, timer] of activeAudio) {
@@ -405,6 +405,7 @@ async function playAudioUrl(url, limitMs = soundLimitMs.value) {
   audio.loop = loopSounds.value;
   await audio.play();
   if (generation !== audioGeneration) { audio.pause(); return; }
+  audio.loop = loopSounds.value;
   const limitTimer = window.setInterval(() => {
     if (loopSounds.value) {
       audio.loop = true;

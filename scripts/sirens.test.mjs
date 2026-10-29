@@ -36,7 +36,7 @@ test('simulated playback schedules a limit, handles live volume, and stops only 
   let ended = 0;
   const playback = startSimulatedSiren(context, sirens[0], { duration: 5, volume: .25, onEnded: () => ended++ });
   assert.equal(nodes[3].started, 2);
-  assert.equal(playback.scheduledEnd, 78.02);
+  assert.equal(playback.scheduledEnd, 178.02);
   playback.setVolume(.5);
   assert.ok(events.some(event => event[0] === 'setValueAtTime' && event[1] === .5));
   playback.stop(); playback.stop();
@@ -53,10 +53,11 @@ async function soundboard(loop = false) {
     .split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
   const previews = [];
   const recordings = [];
+  const properties = ref({ loopSounds: loop }).value;
   const sandbox = {
     defineEmits: () => () => {},
     createSirenHold: () => ({ dispose() {} }),
-    defineProps: () => ({ loopSounds: loop }),
+    defineProps: () => properties,
     ref, computed, watch, nextTick, sirens, onMounted() {}, onBeforeUnmount() {},
     localStorage: { getItem() { return null; }, setItem() {} },
     window: { clearTimeout, setTimeout, AudioContext: class {
@@ -71,7 +72,7 @@ async function soundboard(loop = false) {
     } },
     findSound: async () => ({ url: './example.mp3', fileName: 'example.mp3' }),
     startSimulatedSiren(context, siren, options) {
-      const preview = { resumeSignal() { this.signalResumes = (this.signalResumes || 0) + 1; return true; }, resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
+      const preview = { transitionSignal(mode) { this.mode = mode; this.transitions = (this.transitions || 0) + 1; return true; }, resumeSignal() { this.signalResumes = (this.signalResumes || 0) + 1; return true; }, resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
       previews.push(preview);
       return preview;
     },
@@ -83,7 +84,7 @@ async function soundboard(loop = false) {
     }
   };
   const board = runInNewContext(`${source}\n;({ play, stop, soundMode, playing, volume, readinessText, isMobile, boardPage, boardPageCount, visibleSirens, manufacturer, allowMultiple, getMasterVolume: () => masterVolume, sirenMode, simulatorSiren, openSimulator, closeSimulator, simulatorCommand, stopButton, beginSimulatorTest, releaseSimulatorTest, simulatorActiveMode })`, sandbox);
-  return { board, previews, recordings, nextTick, sandbox };
+  return { board, previews, recordings, nextTick, sandbox, props: properties };
 }
 test('fake sirens overlap and stopping or finishing one preserves the others', async () => {
   const { board, previews, nextTick } = await soundboard();
@@ -245,18 +246,18 @@ test('all four fake modes have distinct pitch patterns and Test is a brief low g
   assert.ok(Math.abs(modes[3].end - 3.02) < 1e-9);
   const peaks = modes.map(oscillator => Math.max(...oscillator.frequency.points.map(point => point[0])));
   assert.ok(peaks[3] < peaks[0]);
-  assert.ok(modes[1].end > modes[2].end, 'Alert must run its ten wind-ups more slowly than Fire');
+  assert.ok(modes[1].end > modes[2].end, 'Alert holds a longer steady signal than Fire');
   assert.ok(modes.every(oscillator => oscillator.frequency.points.at(-1)[0] === 20));
 });
-test('changing mode stops old voices and passes the new mode to subsequent sounds', async () => {
+test('changing mode transitions the current voice rather than recreating it', async () => {
   const { board, previews, nextTick } = await soundboard();
   await board.play(sirens[0]);
   assert.equal(previews[0].mode, 'attack');
   board.sirenMode.value = 'test'; await nextTick();
-  assert.equal(board.playing.value.size, 0);
-  assert.equal(previews[0].stopped, true);
-  await board.play(sirens[0]);
-  assert.equal(previews[1].mode, 'test');
+  assert.equal(board.playing.value.size, 1);
+  assert.equal(previews[0].stopped, false);
+  assert.equal(previews[0].mode, 'test');
+  assert.equal(previews.length, 1);
   board.stop();
 });
 
@@ -369,7 +370,7 @@ test('held Test has no automatic cutoff and coasts from its current rotor speed 
   assert.equal(long.oscillator.end, undefined);
   long.context.currentTime = 3600;
   long.playback.stop();
-  assert.equal(long.playback.scheduledEnd, 3604.02);
+  assert.equal(long.playback.scheduledEnd, 3645.02);
   const growl = start();
   growl.context.currentTime = .3; growl.playback.stop();
   assert.ok(growl.playback.scheduledEnd < 4, 'a short press should coast from low speed');
@@ -417,7 +418,7 @@ test('cabinet Test handles pointer and keyboard holds without a second activatio
   assert.deepEqual(emitted, [['test-start'], ['test-end']]);
 });
 
-test('Attack, Fire, and Alert complete exactly ten full-speed wind-ups before coasting', () => {
+test('Attack and Fire complete exactly ten full-speed wind-ups before coasting', () => {
   function render(mode, duration) {
     const oscillators = [];
     const parameter = () => ({ points: [], setValueAtTime() {}, linearRampToValueAtTime(value, time) { this.points.push([value, time]); }, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
@@ -429,7 +430,7 @@ test('Attack, Fire, and Alert complete exactly ten full-speed wind-ups before co
   const fire = render('fire', 1);
   const alert = render('alert', 1);
   assert.ok(alert.cycle.windUp > fire.cycle.windUp);
-  for (const mode of ['attack', 'fire', 'alert']) {
+  for (const mode of ['attack', 'fire']) {
     const { cycle, oscillator } = render(mode, 1);
     const points = oscillator.frequency.points;
     const fullSpeed = Math.max(...points.map(point => point[0]));
@@ -448,7 +449,7 @@ test('Attack, Fire, and Alert complete exactly ten full-speed wind-ups before co
     assert.ok(Math.abs(peaks.at(-1).end - lastPeakTime) < .001);
     assert.equal(points.at(-1)[0], 20);
     assert.equal(oscillator.end, lastPeakTime + cycle.windDown + .02);
-    assert.equal(oscillator.end, (mode === 'fire' ? 51.5 : mode === 'attack' ? 76 : 198) + .02);
+    assert.equal(oscillator.end, (mode === 'fire' ? 93.5 : 176) + .02);
     assert.equal(render(mode, 5).oscillator.end, oscillator.end, 'powered-time setting must not truncate the sequence');
   }
 });
@@ -536,11 +537,11 @@ test('full-speed release coasts slowly at first, stays continuous, and reaches e
   assert.equal(playback.speed, 1);
   context.currentTime = 4;
   assert.ok(playback.speed > .98, 'do not plunge in pitch during the first second');
-  context.currentTime = 12;
+  context.currentTime = 33;
   assert.ok(Math.abs(playback.speed - .5) < 1e-9);
-  context.currentTime = 20;
+  context.currentTime = 59;
   assert.ok(playback.speed > 0 && playback.speed < .02, 'retain a low tail instead of cutting off');
-  context.currentTime = 21;
+  context.currentTime = 63;
   assert.equal(playback.speed, 0);
 });
 
@@ -622,4 +623,205 @@ test('Keyboard and Mouse default to independent fake sources with live mute and 
   assert.equal(players[1].volume, 0);
   assert.equal(state.mouseSoundSource.value, 'fake');
   state.stopAllAudio();
+});
+
+test('Test retains its first-second release feel then settles into a slow resumable tail', () => {
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+  const motor = startSimulatedSiren(context, sirens[0], { duration: 1, volume: 1, mode: 'test', held: true, onEnded() {} });
+  context.currentTime = 3; motor.stop();
+  context.currentTime = 3.5;
+  assert.ok(Math.abs(motor.speed - Math.pow(1 - .5 / 4, 1.6)) < 1e-9);
+  context.currentTime = 4;
+  assert.ok(Math.abs(motor.speed - Math.pow(.75, 1.6)) < 1e-9);
+  context.currentTime = 5;
+  assert.ok(motor.speed > .6, 'the tail must remain spinning after a second without reapplying power');
+  const remainingSpeed = motor.speed;
+  assert.equal(motor.resume(), true);
+  assert.equal(motor.speed, remainingSpeed);
+  context.currentTime += .5;
+  assert.ok(motor.speed > remainingSpeed);
+  motor.stop();
+  context.currentTime = motor.scheduledEnd;
+  assert.equal(motor.speed, 0);
+});
+
+test('Attack dips gradually between wind-ups without stopping the rotor', () => {
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  for (const mode of ['attack']) {
+    const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+    const motor = startSimulatedSiren(context, sirens[0], { duration: 5, volume: 1, mode, onEnded() {} });
+    const firstDrop = motor.cycle.windUp + motor.cycle.peakHold;
+    assert.equal(motor.cycle.windUp + motor.cycle.peakHold, 8, 'each powered interval lasts eight seconds');
+    assert.equal(motor.cycle.dip, 4, 'each intermediate coast lasts four seconds');
+    context.currentTime = firstDrop + 2;
+    assert.ok(Math.abs(motor.speed - .85) < 1e-9, 'halfway through a dip the rotor retains 85% speed');
+    context.currentTime = firstDrop + 1;
+    assert.ok(motor.speed > .95, `${mode} should not plunge during the first second of a partial coast`);
+    context.currentTime = firstDrop + motor.cycle.dip;
+    assert.ok(Math.abs(motor.speed - motor.cycle.trough) < 1e-9);
+    assert.ok(motor.speed > .4, 'the next wind-up starts from a spinning rotor');
+    context.currentTime += motor.cycle.windUp;
+    assert.ok(Math.abs(motor.speed - 1) < 1e-9);
+    context.currentTime = motor.scheduledEnd;
+    assert.equal(motor.speed, 0, 'full shutdown still completes at the very end');
+  }
+});
+
+test('different signal transitions preserve current speed and oscillator identity during running and coast-down', () => {
+  const nodes = [];
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() { this.stopped = true; } });
+  const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator() { const n = node(); nodes.push(n); return n; } };
+  const motor = startSimulatedSiren(context, sirens[0], { duration: 5, volume: 1, mode: 'attack', onEnded() {} });
+  context.currentTime = 8;
+  const runningSpeed = motor.speed;
+  assert.equal(motor.transitionSignal('alert'), true);
+  assert.equal(motor.speed, runningSpeed);
+  assert.equal(motor.cycle.powered, 180);
+  context.currentTime += 5;
+  motor.stop();
+  context.currentTime += 3;
+  const coastingSpeed = motor.speed;
+  assert.equal(motor.transitionSignal('fire'), true);
+  assert.equal(motor.speed, coastingSpeed);
+  context.currentTime += .1;
+  assert.ok(motor.speed >= coastingSpeed);
+  assert.equal(nodes.length, 2);
+  assert.ok(nodes.every(n => !n.stopped));
+  motor.stop({ immediate: true });
+});
+test('cabinet switches signals on one rotor instead of stopping/recreating it', async () => {
+  const { board, previews } = await soundboard();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('attack');
+  await board.simulatorCommand('alert');
+  assert.equal(previews.length, 1);
+  assert.equal(previews[0].stopped, false);
+  assert.equal(previews[0].mode, 'alert');
+  assert.equal(previews[0].transitions, 1);
+  previews[0].stop = function() { this.stopped = true; };
+  board.stopButton();
+  await board.simulatorCommand('fire');
+  assert.equal(previews.length, 1);
+  assert.equal(previews[0].mode, 'fire');
+  assert.equal(board.simulatorActiveMode.value, 'fire');
+  board.stop();
+});
+test('recorded mode changes fade the previous file before starting the next', async () => {
+  const { board, recordings, nextTick } = await soundboard();
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('alert');
+  await board.simulatorCommand('fire');
+  assert.equal(recordings.length, 2);
+  assert.equal(recordings[0].paused, true);
+  assert.notEqual(recordings[1].paused, true);
+  board.stop();
+});
+
+test('turning Loop off cancels every queued repeat for layered sirens', async () => {
+  const { board, previews, sandbox, props } = await soundboard(true);
+  const queued = new Map(); let timer = 0;
+  sandbox.window.setTimeout = callback => { queued.set(++timer, callback); return timer; };
+  sandbox.window.clearTimeout = id => queued.delete(id);
+  await board.play(sirens[0]); await board.play(sirens[1]);
+  previews[0].end(); previews[1].end();
+  const staleCallbacks = [...queued.values()];
+  assert.equal(queued.size, 2);
+  props.loopSounds = false;
+  assert.equal(queued.size, 0, 'disable pending repeats immediately, before another complete sequence starts');
+  staleCallbacks.forEach(callback => callback());
+  assert.equal(previews.length, 2);
+  assert.equal(board.playing.value.size, 0);
+});
+test('layered sirens each play once when Loop starts off', async () => {
+  const { board, previews, sandbox } = await soundboard();
+  const queued = [];
+  sandbox.window.setTimeout = callback => { queued.push(callback); return queued.length; };
+  sandbox.window.clearTimeout = () => {};
+  for (const siren of sirens.slice(0, 3)) await board.play(siren);
+  previews.forEach(preview => preview.end());
+  assert.equal(queued.length, 0);
+  assert.equal(previews.length, 3);
+  assert.equal(board.playing.value.size, 0);
+});
+test('turning Loop off updates all active real recordings and lets each end once', async () => {
+  const { board, recordings, props, nextTick } = await soundboard(true);
+  board.soundMode.value = 'real'; await nextTick();
+  await board.play(sirens[0]); await board.play(sirens[1]);
+  props.loopSounds = false;
+  assert.ok(recordings.every(audio => audio.loop === false));
+  recordings.forEach(audio => audio.onended());
+  assert.equal(board.playing.value.size, 0);
+  assert.equal(recordings.length, 2);
+});
+
+test('Attack keeps strong rotor speed through every intermediate dip', () => {
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  for (const [mode, floor] of [['attack', .70]]) {
+    const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+    const motor = startSimulatedSiren(context, sirens[0], { duration: 5, volume: 1, mode, onEnded() {} });
+    const span = motor.cycle.windUp + motor.cycle.peakHold + motor.cycle.dip;
+    for (let pulse = 1; pulse < 10; pulse++) {
+      context.currentTime = pulse * span;
+      assert.ok(Math.abs(motor.speed - floor) < 1e-9, 'intermediate rotor speed must not approach the final shutdown growl');
+      context.currentTime += motor.cycle.windUp;
+      assert.ok(Math.abs(motor.speed - 1) < 1e-9);
+    }
+    context.currentTime = motor.scheduledEnd;
+    assert.equal(motor.speed, 0);
+  }
+});
+
+test('Alert winds up once, holds one steady three-minute tone, and coasts only at the end', () => {
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+  const motor = startSimulatedSiren(context, sirens[0], { duration: 1, volume: 1, mode: 'alert', onEnded() {} });
+  assert.equal(motor.cycle.surges, undefined);
+  assert.equal(motor.cycle.powered, 180);
+  context.currentTime = 0; assert.equal(motor.speed, 0);
+  for (let time = 4; time <= 184; time += .25) {
+    context.currentTime = time;
+    assert.equal(motor.speed, 1, 'no intermediate wind-downs during the steady Alert');
+  }
+  context.currentTime = 214;
+  assert.equal(motor.speed, .5);
+  context.currentTime = 244;
+  assert.equal(motor.speed, 0);
+  assert.equal(motor.scheduledEnd, 244.02);
+});
+
+
+test('natural final coasts retain a long tail and can be re-powered without restarting the rotor', () => {
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  for (const mode of ['attack', 'fire', 'alert']) {
+    const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+    const motor = startSimulatedSiren(context, sirens[0], { duration: 1, volume: 1, mode, onEnded() {} });
+    assert.equal(motor.cycle.windDown, 60);
+    const coastStart = motor.cycle.windUp + motor.cycle.powered;
+    context.currentTime = coastStart;
+    assert.equal(motor.speed, 1);
+    context.currentTime += 1;
+    assert.ok(motor.speed > .99, 'the final coast must ease away from full speed');
+    context.currentTime = coastStart + 45;
+    assert.ok(motor.speed > .1, 'a low growl must still exist well past the old cutoff');
+    const speed = motor.speed;
+    assert.equal(motor.transitionSignal('attack'), true);
+    assert.equal(motor.speed, speed, 're-powering keeps the remaining momentum');
+    motor.stop({ immediate: true });
+  }
+  const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
+  const motor = startSimulatedSiren(context, sirens[0], { duration: 1, volume: 1, mode: 'test', held: true, onEnded() {} });
+  context.currentTime = 3; motor.stop();
+  context.currentTime = 33;
+  assert.ok(motor.speed > .1, 'a fully powered Test release retains its low tail for thirty seconds');
+  const speed = motor.speed;
+  assert.equal(motor.resume(), true);
+  assert.equal(motor.speed, speed);
 });

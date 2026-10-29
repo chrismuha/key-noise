@@ -65,12 +65,12 @@ Fake signal patterns:
 
 | Mode | Powered pattern | Final coast | Complete cycle |
 | --- | --- | --- | --- |
-| Attack | 10 wind-ups: 3 seconds up, 1 second at full speed, 2-second dips between rises | 18 seconds | 76 seconds |
-| Fire | 10 fast wails: 1.5 seconds up, 0.5 seconds at full speed, 1.5-second shallow dips | 18 seconds | 51.5 seconds |
-| Alert | 10 slower wind-ups: 4 seconds up, 10.7 seconds at full speed, 3-second dips | 24 seconds | 198 seconds |
+| Attack | 10 wind-ups: 3 seconds up, 5 seconds at full speed, 4-second partial coasts between rises | 60 seconds | 176 seconds |
+| Fire | 10 fast wails: 1.5 seconds up, 0.5 seconds at full speed, 1.5-second shallow dips | 60 seconds | 93.5 seconds |
+| Alert | One 4-second wind-up and a steady 180-second full-speed hold | 60 seconds | 244 seconds |
 | Test (soundboard tap) | Short 0.8-second growl wind-up | 2.2 seconds | 3 seconds |
 
-Attack/Alert/Fire keep the rotor turning during intermediate dips. Fire bottoms
+Attack and Fire keep the rotor turning during intermediate dips. Alert stays at full speed throughout its steady hold. Fire bottoms
 out at 60% speed rather than repeatedly slowing nearly to a stop. Full wind-down
 only occurs at completion or Cancel. Loop repeats a complete signal sequence.
 These fixed cycles ignore the former short powered-time limit.
@@ -117,15 +117,19 @@ when resumed before their short cancellation fade finishes.
 
 **Test is hold-to-run** in the cabinet: mouse/touch or Space/Enter powers the
 rotor while held, with no automatic cutoff. Release to coast down; hold again to
-reapply power from the current speed. Test retains its earlier faster coast
-(about 4 seconds from full speed), independent of the longer signal coast-downs.
+reapply power from the current speed. Test retains its earlier release response for the first second, then settles
+into a slower coast (about 45 seconds total from full speed). Reapplying power
+at any time continues from its remaining speed.
 A short hold produces a lower growl. Releasing overrides Loop. Pointer cancel,
 focus/window loss, or page hiding also releases Test. Real Test audio repeats
 while held and fades on release; it cannot synthesize motor behavior from a file.
 
-Back or Escape closes the cabinet and promptly stops audio. Changing mode or
-source also stops old playback; continuing the same cancelled mode preserves
-the rotor. Tab navigation remains scoped to cabinet sound buttons while open,
+Back or Escape closes the cabinet and promptly stops audio. Changing sound
+source stops old playback. Switching signal modes uses the existing simulated
+rotor, winding smoothly from its current speed into the new pattern. The mode
+dropdown also transitions playing simulated models in place. Real-file mode
+changes fade the old recording out and the new one in; their wind-up sound is
+part of the supplied recording. Tab navigation remains scoped to cabinet sound buttons while open,
 and focus returns to the model on closing.
 
 ## Layout and navigation
@@ -146,3 +150,47 @@ The tests cover synthesized motor timing/continuity, Cancel/resume, mute/loops,
 placeholder buffers and board controls, recording lookup, gestures, pagination,
 and keyboard focus. Audio tests use controlled backends; listening on real
 hardware remains useful for evaluating how the simulations sound.
+
+Attack uses eight-second powered intervals and four-second intermediate coasts,
+with an illustrative 70% minimum rotor speed,
+then wind back up on the same rotor. Only the last coast reaches silence unless
+Cancel removes power earlier. Retaining ten wind-ups makes Attack 2 minutes
+56 seconds. Alert has one wind-up, a steady three-minute tone, and a final coast;
+it does not dip or repeat wind-ups during its hold. Fire and Test use their own
+existing timings.
+
+Starting another signal during a cycle or coast-down preserves the same
+oscillators and current pitch/volume. The rotor accelerates (or slows for a lower
+Test growl) before following the new signal pattern. The current cancelled mode
+continues its remaining sequence; a different mode begins its new sequence from
+the existing motor speed. Clicking a coasting soundboard model also reapplies
+power instead of leaving it stopped or creating another rotor.
+
+Turning **Loop sounds** off updates every active voice immediately and cancels
+any queued next-cycle starts. Each playing siren finishes its current complete
+pattern and coast-down once; it does not start another sequence. A single
+Attack/Fire pattern contains ten wind-ups; Alert contains one steady three-minute hold. Use Cancel
+or Stop all sirens to remove power before that pattern finishes. A physically
+held Test remains powered only while held, independently of Loop.
+
+Alert follows the common steady-signal convention described in
+[Federal Signal's siren manual](https://www.fedsig.com/sites/default/files/resource_library_document/IS_2_Rev713.pdf)
+and [Connecticut's emergency siren guide](https://portal.ct.gov/cfpc/-/media/demhs/_docs/plans-and-publications/ehsp0086--mps_media_guide.pdf).
+The simulator holds full speed for 180 seconds, in addition to its wind-up and
+coast-down. Cancel/resume, smooth mode transitions, and Loop still apply.
+
+Attack’s cadence follows the eight-second-on/four-second-off PGA example in
+[Federal Signal’s timer instructions](https://www.civildefensemuseum.com/sirens/manuals/ARandAFTimerManual.pdf).
+The ten-rise sequence ends with its full 60-second coast instead of the final
+four-second intermediate coast. This is an illustrative pitch profile, not a
+measured recording or a universal timing for every siren model. AR/AF controllers
+also support three-minute Attack signals; the app retains its requested ten rises.
+
+Final fake-siren coasts now last 60 seconds from full speed for Attack, Fire, and
+Alert, including Cancel. Held Test keeps its first-second feathering response
+and extends the remaining tail to about 45 seconds from full speed; short
+growls still stop sooner. These are illustrative settings inspired by the
+[sustained Grayson County recording](https://www.civildefensemuseum.com/sirens/soundsvids/graycoap.mp3),
+whose author reports a coast of over two minutes and fades the recording before
+the rotor stops. The app does not claim an exact measured stop time for that
+recording or identical behavior across all models.

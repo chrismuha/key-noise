@@ -1,5 +1,120 @@
 # key-noise Change List
 
+## October 29, 2026 — Longer Final Coasts and Released-Test Tails
+
+- Extend Attack, Fire, and Alert final coasts to 60 seconds from full speed,
+  including Cancel, so the low growl continues beyond the old 18–24 second cutoff.
+- Extend full-speed held-Test release to 45 seconds while preserving its first
+  second of feathering and shorter tails for low-speed taps. Reapplying power
+  continues from the remaining rotor speed.
+- Keep intermediate cycles unchanged. Document the Grayson County recording as
+  a reference for sustained coasting, with its faded ending and uncertain model;
+  these simulator durations are illustrative, not claimed measurements.
+- Cover extended natural coasts, release tails, exact silence, and late re-powering.
+
+## October 29, 2026 — Use Documented Siren Timer Cadence
+
+- Replace the overly high 85% Attack trough with an illustrative 70% trough.
+- Use the Federal Signal PGA manual’s eight-seconds-powered/four-seconds-coasting
+  cadence: three seconds rising, five seconds at full speed, then a partial coast.
+- Retain ten rises and a complete final 18-second coast (134 seconds total);
+  preserve Alert, Fire, Test, Cancel, and current-speed transitions.
+- Document the source and distinguish measured timer timing from estimated pitch
+  depth. Update cadence, trough, peak-count, and playback-duration checks.
+
+## October 29, 2026 — Shallower Attack Dips Between Cycles
+
+- Raise Attack’s intermediate minimum from 72% to 85% rotor speed so its pitch
+  falls less before the next wind-up. Preserve the current cycle timing, ten
+  full-speed peaks, and complete final wind-down.
+- Update mid-dip and all-nine-trough regression checks and document the new floor.
+
+## October 29, 2026 — Slower Attack Coasts Between Wind-ups
+
+- Extend each Attack intermediate dip from 8 to 12 seconds, retaining at least
+  72% rotor speed before smoothly returning to full speed.
+- Keep all ten wind-ups and the final complete coast; the full sequence now
+  lasts 166 seconds. Add timing and mid-dip speed regression checks.
+
+## October 29, 2026 — Correct Alert to a Single Steady Signal
+
+- Replace repeated Alert wind-ups with one 4-second wind-up, 180 seconds of
+  steady full-speed tone, then the existing 24-second final coast-down.
+- Match the common steady Alert / wavering Attack distinction documented by
+  Federal Signal and Connecticut's emergency siren guide; update the mode label
+  and README to remove the previous cycling Alert description.
+- Preserve Attack/Fire patterns, Test, mute, Cancel/resume, smooth transitions,
+  and Loop. Recover Alert directly into its remaining steady hold when resumed.
+- Add regression coverage for one rise, an uninterrupted three-minute plateau,
+  and one complete final coast, including current-rotor mode transitions.
+
+## October 29, 2026 — Shallower Attack and Alert Pitch Dips
+
+- Keep Attack at least 72% and Alert at least 75% rotor speed during intermediate
+  dips, avoiding a near-shutdown growl before each next wind-up.
+- Retain gradual dip timing, all ten full-speed peaks, current-rotor recovery,
+  and a complete final coast to silence. Preserve Fire and Test profiles.
+- Add regression coverage for all nine intermediate troughs and their following
+  full-speed peaks in both modes.
+
+## October 29, 2026 — Responsive Keyboard Sound Labels
+
+- Give keyboard/mouse button contents a bounded grid track and let sound labels
+  wrap, including filenames and pinned custom sounds, instead of clipping.
+- Allow long Sound readouts and custom-pad filenames to wrap as well.
+- Verify real-file labels at seven requested viewport widths from 240 to 1024
+  pixels, including both sides of the mobile breakpoint, with no label overflow.
+  Also verify fake Play sound labels at narrow phone width.
+
+## October 29, 2026 — Stop Layered Repeats When Loop Is Off
+
+- Cancel every queued fake-siren repeat immediately when Loop is disabled and
+  recheck the setting inside queued callbacks before starting another cycle.
+- Update all active real-recording loop flags synchronously, retaining only the
+  explicit hold-to-run Test exception. Recheck Loop after asynchronous startup.
+- Synchronize Keyboard/Mouse loop changes immediately and recheck recorded
+  playback after startup so an older enabled value cannot remain attached.
+- Keep the current complete signal pattern and natural coast-down, but do not
+  restart it when Loop is off. Preserve Cancel and Stop all behavior.
+- Reproduce the queued-repeat failure with layered voices and add regression
+  tests for disabling queued loops, one-shot layering, and real-recording ends.
+
+## October 29, 2026 — Smooth Transitions Between Different Signals
+
+- Switch simulator modes and active mode-dropdown selections on the existing
+  fake rotor. Preserve current pitch/volume and wind smoothly into the new
+  pattern while running or coasting instead of hard-stopping and recreating audio.
+- Support gradual deceleration into a lower Test growl as well as acceleration
+  back to full speed, retaining mute, signal controls, and loop behavior.
+- Reapply power when clicking a coasting soundboard model.
+- Fade old real recordings out before switching files and fade new files in;
+  retain same-recording resume behavior and cancellation of pending commands.
+- Add regression coverage for oscillator/speed continuity, cabinet mode changes,
+  and recorded-file transitions.
+
+## October 29, 2026 — Gradual Partial Coasts Between Signal Wind-Ups
+
+- Stretch Attack's intermediate slowdown to 8 seconds and Alert's to 12 seconds,
+  preventing the rapid pitch plunge between otherwise complete wind-ups.
+- Keep the rotor spinning at a minimum 45% speed for Attack and 50% for Alert;
+  fully coast to silence only at the final shutdown or explicit Cancel.
+- Preserve ten complete wind-ups, giving total durations of 130 seconds for
+  Attack and 279 seconds for Alert with the longer intermediate coasts.
+- Keep Fire and Test timing unchanged and retain recovery from the same rotor.
+- Add regression coverage for gradual first-second pitch loss, nonzero troughs,
+  full-speed recovery, and complete final silence.
+
+## October 29, 2026 — Slow Final Test Coast Without Changing Feathering
+
+- Preserve Test's existing hold, wind-up, re-powering, and first-second release
+  response. If power stays released, continue into a longer low-speed tail
+  instead of quickly finishing the wind-down.
+- Coast about 12 seconds from full-speed manual Test release, scaling down for
+  shorter growls. Reapply power from the remaining rotor speed at any point.
+- Keep the regular soundboard growl and other signal timing unchanged.
+- Add a regression test for first-second continuity, retained tail speed, and
+  resuming smoothly after leaving Test released for more than a second.
+
 ## October 29, 2026 — Signal Corrections and Keyboard/Mouse Fake Sounds
 
 - Add independently remembered Real/Fake sound dropdowns to Keyboard and Mouse,

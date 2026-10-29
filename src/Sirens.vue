@@ -19,8 +19,8 @@ const allowMultiple = ref(true);
 const sirenMode = ref('attack');
 const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', test: 'Test / Growl' };
 const modeDescriptions = {
-  attack: 'Ten complete wind-ups, with the rotor turning between pulses, then a full coast-down.',
-  alert: 'Alert: ten slower wind-ups with long full-speed holds and a gradual 24-second coast.',
+  attack: 'Ten continuous wails with shallow, gradual pitch dips; fully coasts down only at the end.',
+  alert: 'One wind-up, a steady three-minute tone, then a gradual full coast-down.',
   fire: 'Fire: ten fast wails with shallow dips, followed by one final coast-down.',
   test: 'A low growl with a short wind-up and a complete coast-down.'
 };
@@ -77,6 +77,7 @@ async function getAudioOutput() {
 }
 let disposed = false;
 let scanRequest = 0;
+let preservedModeChange = null;
 function finish(id, session) {
   if (sessions.get(id) !== session) return;
   sessions.delete(id);
@@ -136,6 +137,21 @@ async function simulatorCommand(mode, { held = false } = {}) {
   const siren = simulatorSiren.value;
   if (!siren) return;
   const session = sessions.get(siren.id);
+  if (!held && session?.simulation && session.mode !== mode && session.simulation.transitionSignal(mode)) {
+    session.mode = mode;
+    session.held = false;
+    session.stopping = false;
+    window.clearTimeout(session.timer);
+    simulatorActiveMode.value = mode;
+    if (sirenMode.value !== mode) { preservedModeChange = mode; sirenMode.value = mode; }
+    status.value = `${modeLabels[mode]} · transitioning from the current rotor speed.`;
+    return;
+  }
+  if (!held && session?.audio && session.mode !== mode) {
+    windDown(siren.id, session);
+    await new Promise(resolve => window.setTimeout(resolve, 180));
+    if (request !== simulatorCommandRequest || simulatorSiren.value !== siren || disposed) return;
+  }
   if (!held && session?.mode === mode) {
     const continued = session.simulation
       ? (!session.stopping && !session.held) || session.simulation.resumeSignal()
@@ -216,7 +232,13 @@ async function scan() {
 async function play(siren, { held = false } = {}) {
   const previous = sessions.get(siren.id);
   if (previous) {
-    windDown(siren.id, previous);
+    if (previous.stopping && previous.simulation?.resumeSignal()) {
+      previous.stopping = false;
+      previous.held = false;
+      window.clearTimeout(previous.timer);
+      if (simulatorSiren.value?.id === siren.id) simulatorActiveMode.value = previous.mode;
+      status.value = `${modeLabels[previous.mode]} resumed from the current speed.`;
+    } else windDown(siren.id, previous);
     return;
   }
   if (!allowMultiple.value) stop();
@@ -229,14 +251,22 @@ async function play(siren, { held = false } = {}) {
     try {
       const destination = await getAudioOutput();
       if (!current()) return;
-      const startPreview = () => {
+      const startPreview = (repeat = false) => {
         if (!current()) return;
+        if (repeat && (!props.loopSounds || session.stopping || session.held)) {
+          finish(siren.id, session);
+          return;
+        }
+        session.waitingToLoop = false;
         session.simulation = startSimulatedSiren(context, siren, {
-          duration: duration.value, volume: 1, destination, mode: sirenMode.value, held,
+          duration: duration.value, volume: 1, destination, mode: session.mode, held: session.held,
           onEnded: () => {
             if (!current()) return;
             session.simulation = null;
-            if (props.loopSounds && !session.stopping && !session.held) session.timer = window.setTimeout(startPreview, 0);
+            if (props.loopSounds && !session.stopping && !session.held) {
+              session.waitingToLoop = true;
+              session.timer = window.setTimeout(() => startPreview(true), 0);
+            }
             else { finish(siren.id, session); status.value = `${siren.model} finished.`; }
           }
         });
@@ -260,7 +290,7 @@ async function play(siren, { held = false } = {}) {
   const audio = new Audio(source.url);
   session.audio = audio;
   audio.volume = 1;
-  audio.loop = held || props.loopSounds;
+  audio.loop = (held && simulatorTestHeld.value) || props.loopSounds;
   audio.onended = () => { if (current()) { finish(siren.id, session); status.value = `${siren.model} finished.`; } };
   audio.onerror = () => { if (current()) { finish(siren.id, session); status.value = `Could not play ${source.fileName}. Check the audio file.`; } };
   try {
@@ -268,10 +298,13 @@ async function play(siren, { held = false } = {}) {
     if (!current()) return;
     session.source = context.createMediaElementSource(audio);
     session.output = context.createGain();
+    session.output.gain.setValueAtTime(0, context.currentTime);
     session.source.connect(session.output);
     session.output.connect(destination);
     await audio.play();
     if (!current()) { audio.pause(); return; }
+    audio.loop = (session.held && simulatorTestHeld.value) || props.loopSounds;
+    session.output.gain.linearRampToValueAtTime(1, context.currentTime + 0.15);
     available.value.add(siren.id);
     status.value = `Playing ${siren.manufacturer} ${siren.model}`;
 
@@ -280,8 +313,11 @@ async function play(siren, { held = false } = {}) {
   }
 }
 watch(() => props.loopSounds, (value) => {
-  for (const session of sessions.values()) if (session.audio) session.audio.loop = session.held || value;
-});
+  for (const [id, session] of sessions) {
+    if (session.audio) session.audio.loop = (session.held && simulatorTestHeld.value) || value;
+    if (!value && session.waitingToLoop) finish(id, session);
+  }
+}, { flush: 'sync' });
 watch(volume, (value) => {
   try { localStorage.setItem('key-noise-siren-volume', String(value)); } catch { /* Session volume still works. */ }
   if (!masterVolume) return;
@@ -291,10 +327,21 @@ watch(volume, (value) => {
   masterVolume.gain.linearRampToValueAtTime(value / 100, now + 0.01);
 }, { flush: 'sync' });
 watch(allowMultiple, () => { stop(); status.value = 'Choose a model to play.'; });
-watch(sirenMode, () => {
-  stop();
+watch(sirenMode, (mode) => {
+  if (preservedModeChange === mode) preservedModeChange = null;
+  else {
+    for (const [id, session] of sessions) {
+      if (session.simulation?.transitionSignal(mode)) {
+        session.mode = mode;
+        session.held = false;
+        session.stopping = false;
+        window.clearTimeout(session.timer);
+        if (simulatorSiren.value?.id === id) simulatorActiveMode.value = mode;
+      } else windDown(id, session);
+    }
+  }
   available.value = new Set();
-  status.value = modeDescriptions[sirenMode.value];
+  status.value = modeDescriptions[mode];
   scan();
 });
 watch([soundMode, duration], () => { stop(); status.value = 'Choose a model to play.'; });
