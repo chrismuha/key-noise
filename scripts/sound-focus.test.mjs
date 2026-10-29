@@ -35,3 +35,13 @@ test('modified Tab and non-Tab keys preserve normal behavior', () => {
   assert.equal(cycleSoundFocus({ ...event, key: 'Enter' }, root), false);
   assert.equal(root.activeElement, null);
 });
+test('an open simulator limits sound-only Tab navigation to its own buttons', () => {
+  const { root, buttons, event } = fixture();
+  const modalButtons = buttons.slice(1);
+  root.querySelector = selector => { assert.equal(selector, 'dialog[open]'); return { querySelectorAll: () => modalButtons }; };
+  cycleSoundFocus(event, root);
+  assert.equal(root.activeElement, buttons[1]);
+  event.shiftKey = true;
+  cycleSoundFocus(event, root);
+  assert.equal(root.activeElement, buttons[2]);
+});

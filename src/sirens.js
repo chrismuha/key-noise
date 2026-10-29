@@ -15,14 +15,15 @@ export const sirens = families.flatMap(([manufacturer, type, models]) => models.
   manufacturer, model, type
 })));
 export const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
-export function soundSources(siren) {
-  return audioExtensions.map((extension) => ({
-    fileName: `${siren.id}.${extension}`,
-    url: `./sounds/sirens/${siren.id}.${extension}`
-  }));
+export function soundSources(siren, mode) {
+  const names = mode ? [`${siren.id}-${mode}`, ...(mode === 'attack' ? [siren.id] : [])] : [siren.id];
+  return names.flatMap(name => audioExtensions.map(extension => ({
+    fileName: `${name}.${extension}`,
+    url: `./sounds/sirens/${name}.${extension}`
+  })));
 }
-export async function findSound(siren) {
-  for (const source of soundSources(siren)) {
+export async function findSound(siren, mode) {
+  for (const source of soundSources(siren, mode)) {
     try {
       const response = await fetch(source.url, { method: 'HEAD', cache: 'no-store' });
       // Vite returns index.html for absent files, so status alone is insufficient.

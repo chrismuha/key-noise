@@ -748,7 +748,7 @@ onBeforeUnmount(() => {
       <p>Tab / Shift+Tab cycles through visible sound buttons. Turn off to tab through all controls.</p>
     </section>
 
-    <Sirens v-if="activeTab === 'sirens'" :loop-sounds="loopSounds" />
+    <Sirens v-if="activeTab === 'sirens'" :loop-sounds="loopSounds" @update:loop-sounds="loopSounds = $event" />
 
     <section v-if="activeTab !== 'sirens'" class="stage" :class="{ active: isArmed }" tabindex="0">
       <div class="meter" aria-hidden="true">

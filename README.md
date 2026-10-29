@@ -64,7 +64,7 @@ show a message; there is no automatic simulated fallback in Real sounds mode.
 Several models can play together, each with its own playback limit. Click a
 playing model to stop just that siren, or press Stop all sirens. Filtering keeps
 active sirens playing. Switching tabs or changing the source or duration stops
-all sirens. Volume and a 1–5 second playback limit are available.
+all sirens. Volume and a 1–5 second powered-time setting are available for fake Attack sirens, in addition to wind-up and coast-down. Fire and Alert always finish their ten-wind-up sequences.
 
 Add real sounds under `public/sounds/sirens/`, with the filenames shown on each
 model button. For example:
@@ -130,3 +130,84 @@ Keyboard and Mouse audio also support looping and their Stop all sounds button.
 Use **▴ Hide controls** for a soundboard view without the header, tabs, settings,
 or filters. Loop and Stop remain available. **▾ Show controls** restores the full
 view without interrupting playback.
+
+The **Siren mode** dropdown offers **Attack** (rising/falling wail), **Alert**
+(ten slower full wind-ups), **Fire** (ten faster full wind-ups), and **Test / Growl**
+(a short low growl with 0.8 seconds of wind-up and 2.2 seconds of coast-down).
+These fake-mode patterns are illustrative rather than standardized emergency
+signals or exact reproductions. Loop repeats the selected pattern. Changing
+mode stops active sounds so the next model plays the newly selected pattern.
+
+For Real sounds, add mode-specific recordings, for example:
+
+```text
+public/sounds/sirens/whelen-wps-2901-attack.mp3
+public/sounds/sirens/whelen-wps-2901-alert.mp3
+public/sounds/sirens/whelen-wps-2901-fire.mp3
+public/sounds/sirens/whelen-wps-2901-test.mp3
+```
+
+The filenames displayed on the buttons follow the selected mode. WAV, OGG, and
+M4A also work. Attack accepts the original model-only filename as a fallback;
+other modes require their own files so they do not play an unrelated recording.
+Real recordings play in full so any recorded wind-up and wind-down are preserved.
+
+## Cabinet simulator
+
+Press and hold a siren model for about half a second to open its control cabinet.
+A normal tap still plays/stops the sound. Moving your finger to scroll cancels
+the hold. On desktop, right-click the model or focus it and press **F2**.
+
+The simulator follows the reference cabinet: a yellow metal enclosure, civil
+defense emblem, power/signal lamps, and five colored **Test**, **Alert**, **Fire**,
+**Attack**, and **Cancel** buttons. It displays the selected make and model.
+Opening it is silent; a mode button starts that siren. Test uses the short growl.
+Cancel stops playback; changing mode restarts the model with the new pattern.
+Sound source, volume, and Loop controls use the same settings as the soundboard.
+Missing real recordings show their expected filename instead of generating audio.
+
+**← Soundboard** or **Escape** closes the cabinet and stops its sounds. The modal
+keeps focus inside the simulator; sound-only Tab navigation cycles its four mode
+buttons, and focus returns to the model when the cabinet closes. The cabinet
+fits narrow screens and scrolls vertically when needed.
+
+## Complete motor cycles
+
+Fake sirens wind up from a low rotor pitch and coast all the way down to silence.
+Attack adds 3 seconds of wind-up and 4 seconds of coast-down around the
+selected **Powered time** (1–5 seconds). Fire performs ten complete rises to full
+speed, each with a 2-second rise, a 2.25-second full-speed hold, and a 1.5-second
+dip between rises, followed by a 4-second final coast (**1 minute total**). Alert
+performs the same ten rises more slowly: 4 seconds up, a 10.7-second full-speed
+hold, 3 seconds between rises, then a 6-second final coast (**3 minutes total**). These sequences ignore the short powered-time selector so
+the final rise is never cut off. Test / Growl uses a short 0.8-second rise and 2.2-second coast, without a
+powered hold. Loop restarts only after the complete motor cycle finishes.
+
+Clicking a playing siren or using **Cancel / Stop all sirens** removes motor power
+and lets simulated rotors coast down from their current pitch. The signal light
+stays on while the sound is audible. Volume zero still mutes immediately after
+the brief click-prevention ramp. Leaving the tab, closing the simulator, changing
+mode/source, or switching playback settings stops audio promptly.
+
+Real sounds play complete recordings; the powered-time selector is disabled in
+Real sounds mode. Loop repeats the complete file. Explicitly cancelling a real
+recording fades it out briefly; the app cannot generate a physical rotor coast
+from an arbitrary recording.
+
+In the cabinet simulator, **Test is a momentary hold-to-run button**. Hold it with
+a mouse or finger, or focus it and hold Space/Enter. The fake rotor accelerates
+for 3 seconds and stays at full speed indefinitely while held. Release to remove
+power and coast down from the current speed; brief holds give low growls. Loop
+never restarts a released Test. Pointer cancellation, focus loss, window blur,
+and switching away from the page also release the control. Real Test recordings
+repeat while held and fade out on release. The regular soundboard Test mode
+still plays its short complete growl cycle when tapped.
+
+Holding Test again while a rotor is coasting reapplies power to the **same
+rotor**, preserving its current pitch, speed, and volume. It accelerates from
+that speed instead of starting from zero. You can repeatedly hold, release,
+let it slow, and hold again. Test can also take manual power control of the
+currently running simulated signal without constructing another sound or
+resetting the model. Real recordings keep their playback position when Test
+is pressed again during their release fade. Once a sound has fully finished,
+the next hold starts a new rotor or recording normally.

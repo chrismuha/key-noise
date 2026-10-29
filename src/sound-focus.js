@@ -1,7 +1,8 @@
 // Only visible sound triggers participate, including the current mobile page.
 export function cycleSoundFocus(event, root = document) {
   if (event.defaultPrevented || event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return false;
-  const buttons = [...root.querySelectorAll('button[data-sound-button]:not([disabled])')].filter(button =>
+  const scope = root.querySelector?.('dialog[open]') || root;
+  const buttons = [...scope.querySelectorAll('button[data-sound-button]:not([disabled])')].filter(button =>
     button.getClientRects().length > 0 && root.defaultView.getComputedStyle(button).visibility !== 'hidden'
   );
   if (!buttons.length) return false;

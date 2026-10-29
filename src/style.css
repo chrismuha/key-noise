@@ -10,6 +10,12 @@
   box-sizing: border-box;
 }
 
+*, *::before, *::after {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 body {
   min-width: 320px;
   margin: 0;
@@ -587,3 +593,51 @@ button, input, select { touch-action: manipulation; }
 .app.board-only .mobile-stop-all { display: block; width: 100%; margin-top: 12px; }
 
 .siren-controls input[type='range'] { padding: 0; border: 0; background: transparent; cursor: pointer; }
+
+.siren-mode-description { margin: 0 0 8px; color: #bdc5cf; font-size: 13px; line-height: 1.5; }
+.app.board-only .siren-mode-description { display: none; }
+
+/* A responsive, physical control cabinet inspired by civil-defense field stations. */
+.siren-simulator { width: min(680px, calc(100vw - 20px)); max-width: none; max-height: calc(100dvh - 20px); padding: 0; border: 1px solid #6e6859; border-radius: 18px; background: #171b1e; color: #f7f8fb; overflow: auto; box-shadow: 0 28px 100px #000c; }
+.siren-simulator::backdrop { background: #080b10e8; backdrop-filter: blur(8px); }
+.simulator-topbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #171b1ef5; border-bottom: 1px solid #ffffff18; }
+.simulator-topbar > span { text-transform: uppercase; font-size: 10px; letter-spacing: .14em; color: #c1b69e; }
+.simulator-back { min-height: 44px; padding: 8px 12px; color: #eee8d9; background: #292c2b; border: 1px solid #6c6a59; border-radius: 7px; cursor: pointer; }
+.siren-cabinet { position: relative; display: flex; flex-direction: column; align-items: center; padding: clamp(22px, 5vw, 42px) clamp(12px, 4vw, 30px) 20px; overflow: hidden; color: #302212; border: 8px solid #72552e; border-top-color: #c99c4b; border-left-color: #b3863b; background: repeating-linear-gradient(89deg, #0000 0 53px, #fff03c06 54px 55px), radial-gradient(ellipse at 80% 15%, #e3ab45, transparent 65%), linear-gradient(115deg, #a86f22, #c18b32 40%, #b37a29); box-shadow: inset 0 0 35px #61360f70; }
+.civil-defense-emblem { width: clamp(110px, 27vw, 190px); margin-bottom: 22px; filter: drop-shadow(0 4px 3px #50301490); opacity: .94; }
+.civil-defense-emblem svg { display: block; width: 100%; }
+.cabinet-model { text-align: center; max-width: 100%; margin-bottom: clamp(20px, 5vw, 45px); }
+.cabinet-model > span { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; font-weight: 800; }
+.cabinet-model h2 { margin: 8px 0; font-size: clamp(22px, 5vw, 36px); overflow-wrap: anywhere; text-shadow: 0 1px #f0d49680; }
+.cabinet-model small { font-size: 11px; }
+.cabinet-screw { position: absolute; left: 12px; width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(160deg, #ccc4a4, #58594c); border: 2px solid #645d45; box-shadow: 2px 3px 4px #4d3019a0; }
+.cabinet-screw::after { content: ''; position: absolute; top: 9px; left: 1px; right: 1px; height: 3px; background: #393c30; transform: rotate(-14deg); }
+.screw-top { top: 35%; }.screw-bottom { bottom: 20px; }
+.cabinet-lights { display: flex; gap: 30px; margin-bottom: 22px; }
+.cabinet-lights > span { display: grid; justify-items: center; gap: 8px; text-transform: uppercase; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.pilot-light { display: block; width: 28px; height: 28px; border-radius: 50%; border: 4px solid #c8b286; background: radial-gradient(circle at 35% 30%, #b15532, #441c17 75%); box-shadow: 0 2px 4px #39230cc0, inset 0 0 3px #000; }
+.power-light { background: radial-gradient(circle at 40% 35%, #fff2a0, #f4ac19 50%, #b34810); box-shadow: 0 0 16px #ffc23b90; }
+.signal-light.lit { background: radial-gradient(circle at 40% 35%, #ffb7a0, #ff432c 50%, #9c1916); box-shadow: 0 0 18px #ff3c1d90; }
+.warning-control-plate { width: 100%; padding: clamp(12px, 3vw, 24px) 10px 12px; border: 5px ridge #d3c2a0; background: linear-gradient(130deg, #762e30, #682628 65%, #7c3936); color: #e5d8ba; text-align: center; box-shadow: 0 4px 8px #55381b80; }
+.cabinet-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(3px, 1vw, 10px); margin-bottom: 18px; }
+.cabinet-control { --ring: #bdc0b4; display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; min-height: 80px; padding: 0 0 6px; background: transparent; color: #eadcc0; border: 0; border-radius: 6px; cursor: pointer; touch-action: manipulation; }
+.cabinet-control > span { font-size: clamp(9px, 2.5vw, 14px); font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+.cabinet-control > i { display: block; width: clamp(38px, 10vw, 68px); aspect-ratio: 1; border-radius: 50%; border: clamp(6px, 1.6vw, 10px) solid var(--ring); background: radial-gradient(circle at 38% 30%, #49443c, #201f1d 55%, #080c0b); box-shadow: 0 5px 5px #1a0a08c0, 0 0 0 2px #0005, inset 0 0 0 3px #ffffff14, inset 0 4px 6px #000b; transition: transform 80ms, box-shadow 80ms; }
+.cabinet-control.blue { --ring: #234f75; }.cabinet-control.red { --ring: #9b3031; }.cabinet-control.yellow { --ring: #d5cb4e; }.cabinet-control.black { --ring: #30352f; }
+.cabinet-control:active > i, .cabinet-control.engaged > i { transform: translateY(3px); box-shadow: 0 1px 2px #1a0a08, 0 0 0 2px #0005, inset 0 5px 10px #000c; }
+.cabinet-control.engaged > span { color: #fff5b3; }
+.warning-control-plate h3 { margin: 0; font-size: clamp(14px, 4.5vw, 27px); font-stretch: condensed; text-transform: uppercase; letter-spacing: .03em; }
+.warning-control-plate p { margin: 7px 0; font-size: 10px; text-transform: uppercase; overflow-wrap: anywhere; }
+.warning-control-plate small { font-size: 8px; text-transform: uppercase; letter-spacing: .1em; }
+.cabinet-status { width: 100%; min-height: 36px; margin: 18px 0 0; padding-left: 22px; font-size: 12px; line-height: 1.5; text-align: center; font-weight: 600; overflow-wrap: anywhere; }
+.simulator-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 18px; }
+.simulator-options .loop-option { grid-column: 1 / -1; }
+.simulator-options input[type='range'] { width: 100%; padding: 0; border: 0; background: transparent; accent-color: #4eb9ab; }
+.simulator-hint { text-transform: none !important; font-weight: 500 !important; font-size: 10px !important; }
+@media (max-width: 380px) {
+  .siren-simulator { width: calc(100vw - 8px); max-height: calc(100dvh - 8px); border-radius: 10px; }
+  .siren-cabinet { border-width: 5px; padding-inline: 8px; }
+  .simulator-options { padding: 12px; gap: 12px; }
+  .warning-control-plate { border-width: 3px; padding-inline: 5px; }
+}
+.siren-key { user-select: none; -webkit-touch-callout: none; touch-action: pan-y; }

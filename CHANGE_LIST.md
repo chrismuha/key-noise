@@ -1,5 +1,135 @@
 # key-noise Change List
 
+## October 29, 2026 — Longer Full-Speed Signal Holds
+
+- Extend fake Fire to one minute total and fake Alert to three minutes total,
+  including their final coast-downs, while retaining ten complete wind-ups.
+- Hold each Fire peak at full speed for 2.25 seconds and each slower Alert peak
+  for 10.7 seconds instead of immediately dropping after reaching full speed.
+- Update mode descriptions and fixed-cycle duration labels. Preserve early
+  Cancel, re-powering through Test, full-cycle loops, and recorded-file playback.
+- Verify all ten sustained full-speed peaks, exact total durations, and complete
+  final wind-downs in automated timing tests.
+
+## October 29, 2026 — Disable Text Highlighting
+
+- Disable text selection and touch text callouts throughout the app and cabinet
+  simulator. Prevent drag selection and collapse native text-input selections
+  while retaining caret movement, typing, scrolling, and control activation.
+
+## October 29, 2026 — Immediate Cabinet Button Release on Cancel
+
+- Separate the cabinet's latched button state from the rotor's audible/running
+  state. Cancel releases the active button and its pressed accessibility state
+  immediately while the siren continues its natural coast-down.
+- Keep the signal lamp on until the rotor finishes, and release the Test button
+  immediately when manual power is removed.
+- Add regression coverage verifying immediate button release with the same
+  still-coasting audio session.
+
+## October 29, 2026 — Reapply Test Power Without Restarting
+
+- Reuse the current simulated rotor when Test is held during a running signal
+  or coast-down. Preserve current pitch/speed and accelerate from there rather
+  than stopping and recreating the siren.
+- Allow repeated hold/release/hold gestures while the rotor is still turning,
+  canceling its pending shutdown when power returns. Keep mute and Loop behavior.
+- Keep the current recording and playback position when Test re-powers real
+  audio during an explicit fade, instead of loading or rewinding the file.
+- Keep the Test pressed state separate from the selected signal and clarify the
+  cabinet hint: hold to power, release to coast, hold again to resume.
+- Add regression coverage for continuous speed through repeated gestures,
+  canceled shutdown, unchanged oscillator counts, and preserved real-file position.
+
+## October 29, 2026 — Ten Complete Fire and Alert Wind-Ups
+
+- Make fake Fire finish exactly ten full-speed wind-ups before the final
+  coast-down: 2-second rises, 1.5-second dips between rises, and 4-second coast.
+- Make fake Alert run the same ten-wind-up sequence more slowly: 4-second rises,
+  3-second dips between rises, and 6-second final coast.
+- Schedule every full-speed peak explicitly so no rise is partial or cut off.
+  Disable the Attack powered-time selector for these fixed complete sequences.
+- Preserve early Cancel coast-down, full-sequence looping, hold-to-run Test,
+  independent overlapping sirens, and real-file playback.
+- Add regression coverage counting all ten equal full-speed peaks and verifying
+  the complete final coast regardless of the powered-time setting.
+
+## October 29, 2026 — Momentary Hold-to-Run Test Control
+
+- Make the cabinet Test button run only while held using a mouse, touch, Space,
+  or Enter. Wind fake rotors up over 3 seconds and sustain full speed without
+  an automatic duration cutoff; short holds produce lower growls.
+- Coast from the current rotor speed on release and suppress Loop restarts.
+  Release on pointer cancellation, focus/window loss, and page hiding as well.
+- Capture the pointer so releasing outside the button still removes power.
+  Cancel pending asynchronous starts when Test is released quickly.
+- Repeat real Test recordings while held and fade them out when released.
+- Keep regular soundboard Test taps as short complete growl cycles, with an
+  assistive click fallback for activating the cabinet button without a hold.
+- Add regression tests for long/short holds, release with Loop enabled, and
+  release before playback initialization completes.
+
+## October 29, 2026 — Complete Siren Wind-Up and Coast-Down
+
+- Model fake sirens with a full low-to-high motor wind-up and a speed-based
+  coast-down to silence instead of ending at an arbitrary pitch.
+- Treat the 1–5 second selector as Powered time. Attack/Alert add 3 seconds of
+  wind-up and 4 seconds of coast; Fire adds 4 and 5 seconds respectively.
+  Test / Growl completes a 0.8-second wind-up and 2.2-second coast.
+- Start each fake loop only after its full cycle finishes, preserving mute and
+  independent overlapping playback. Cancel or clicking a playing siren removes
+  power and coasts down from its current pitch; keep it tracked until finished.
+- Keep tab/source/mode changes and closing the simulator as prompt stops.
+- Play real recordings in full, looping at their natural end instead of
+  truncating their wind-down with the powered-time setting. Fade explicit
+  cancellation briefly; real rotor behavior remains part of the recording.
+- Add regression coverage for complete rises/falls at the shortest powered time,
+  graceful versus immediate stop, and untruncated real recording loops.
+
+## October 29, 2026 — Current Device Web Preview
+
+- Add Current device as the default screen tester preset, filling the available browser area without a simulated device frame.
+- Keep fixed device presets, rotation, and custom sizing available when selected.
+- Refresh preview dimensions automatically on browser resizing and clear simulated safe-area overrides when returning to Current device.
+- Remove casino cabinet presets, cabinet display markup, and cabinet-specific styling from the Key Noise web screen tester.
+
+## October 29, 2026 — Press-and-Hold Cabinet Simulator
+
+- Hold any siren model for 550 ms to open a dedicated control-cabinet simulator.
+  Preserve normal tap playback, suppress the click after a hold, and cancel the
+  gesture when moving to scroll. Also support right-click and keyboard F2.
+- Recreate the supplied yellow cabinet reference in responsive CSS/SVG, with
+  civil defense emblem, enclosure hardware, power/signal lamps, model name,
+  and silver Test, blue Alert, red Fire, yellow Attack, and black Cancel buttons.
+- Open silently, then play the selected model using the cabinet mode buttons.
+  Use the existing source, volume, mute, and loop controls. Test gives the growl;
+  Cancel stops audio. Protect rapid commands so only the latest command starts,
+  including when Cancel interrupts a pending command.
+- Provide a native modal with Escape/Back dismissal, focus restoration, and
+  sound-only Tab navigation scoped to the simulator. Stop sounds on dismissal.
+- Keep the cabinet usable on small screens with a scrollable layout and a
+  persistent Back control. No extra activation or button sound effects.
+- Add hold/scroll, simulator lifecycle, command-race, and modal-focus tests.
+  Verify desktop entry, playback indicators, mute, Loop, Cancel, Back, and a
+  phone-sized layout in the connected browser with no console errors observed.
+
+## October 29, 2026 — Attack, Alert, Fire, and Test / Growl Modes
+
+- Add a Siren mode dropdown next to Sound source and Manufacturer.
+- Give fake sirens four distinct illustrative patterns: Attack rises/falls,
+  Alert winds up to steady pitch, Fire rises/falls more slowly, and Test / Growl
+  produces a short low wind-up/down capped at 1.5 seconds or the playback limit.
+- Support independent looping and overlapping voices for the chosen mode.
+  Changing mode stops old voices and refreshes real-file availability, ignoring
+  stale scans from the previous mode.
+- Load mode-specific real recordings using model-attack, model-alert, model-fire,
+  or model-test filenames in MP3/WAV/OGG/M4A formats. Preserve original model-only
+  filenames as an Attack fallback; never use them for the other modes.
+- Update filenames, missing-file messages, mode descriptions, and README setup
+  instructions. Keep model-button labels as Play sound / Stop.
+- Add regression tests for distinct patterns, the brief growl, recording filename
+  fallbacks, and stopping/restarting playback when the selected mode changes.
+
 ## October 29, 2026 — Siren Volume, Transitions, and Consistent Button Labels
 
 - Route real and fake sirens, overlapping voices, and loop restarts through one
