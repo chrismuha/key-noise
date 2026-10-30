@@ -1,5 +1,13 @@
 # key-noise Change List
 
+## October 30, 2026 — Update Automatic Sound Playback Regression
+
+- Correct the Keyboard/Mouse regression that still referenced removed source
+  settings and caused Code Quality to fail after the dropdown removal.
+- Verify built-in sounds remain ready with older saved Real preferences, and
+  preserve checks for playback, live mute, Loop, and Stop all sounds.
+- Validation: all 76 tests pass locally; no local build is run.
+
 ## October 30, 2026 — Keyboard & Mouse Sounds Just Work
 
 - Remove the Real/Fake dropdown and old source preferences from Keyboard and

@@ -595,19 +595,18 @@ test('keyboard and mouse fake sounds generate non-silent, click-free buffers and
     player.stop(); assert.equal(gain.value, 0); assert.equal(ended, 1);
   }
 });
-test('Keyboard and Mouse default to independent fake sources with live mute and Stop all', async () => {
+test('Keyboard and Mouse always play built-in sounds despite saved Real preferences, with live mute and Stop all', async () => {
   const { runInNewContext } = await import('node:vm');
   const { ref, computed, watch, nextTick } = await import('vue');
   const script = (await readFile(new URL('../src/App.vue', import.meta.url), 'utf8')).split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
   const players = [];
-  const state = runInNewContext(`${script}\n;({ activeTab, keyboardSoundSource, mouseSoundSource, playSound, playMouseButton, systemVolume, loopSounds, stopAllAudio, statusText, lastSound })`, {
+  const state = runInNewContext(`${script}\n;({ activeTab, playSound, playMouseButton, systemVolume, loopSounds, stopAllAudio, statusText, lastSound })`, {
     ref, computed, watch, onMounted() {}, onBeforeUnmount() {},
-    localStorage: { getItem() { return null; }, setItem() {} },
+    localStorage: { getItem(key) { return ['key-noise-keyboard-source', 'key-noise-mouse-source'].includes(key) ? 'real' : null; }, setItem() {} },
     window: { AudioContext: class { state = 'running'; }, setTimeout() { return 0; }, clearTimeout() {}, clearInterval() {} },
     startPlaceholderSound(context, options) { const player = { ...options, setVolume(value) { this.volume = value; }, setLoop(value) { this.loop = value; }, stop() { this.stopped = true; } }; players.push(player); return player; }
   });
-  assert.equal(state.keyboardSoundSource.value, 'fake');
-  assert.equal(state.mouseSoundSource.value, 'fake');
+  assert.equal(state.statusText.value, '27 keyboard sounds ready');
   await state.playSound(1);
   assert.equal(players[0].kind, 'keyboard');
   state.systemVolume.value = 0; await nextTick();
@@ -615,13 +614,12 @@ test('Keyboard and Mouse default to independent fake sources with live mute and 
   state.loopSounds.value = true; await nextTick();
   assert.equal(players[0].loop, true);
   state.stopAllAudio(); assert.equal(players[0].stopped, true);
-  state.keyboardSoundSource.value = 'real'; await nextTick();
-  assert.match(state.statusText.value, /^Add files named/);
   state.activeTab.value = 'mouse'; await nextTick();
   await state.playMouseButton({ soundNumber: 2, label: 'Right Click' });
   assert.equal(players[1].kind, 'mouse');
   assert.equal(players[1].volume, 0);
-  assert.equal(state.mouseSoundSource.value, 'fake');
+  assert.equal(state.statusText.value, '2 mouse sounds ready');
+  assert.equal(state.lastSound.value, 'Sound 2');
   state.stopAllAudio();
 });
 
