@@ -1,5 +1,117 @@
 # key-noise Change List
 
+## October 30, 2026 — Dropbox Collection Audit and Second-Tap Stop
+
+- Audit all 79 files in the original public-domain Dropbox ZIP and include an
+  inventory of imported sounds, startup/loop components, and spoken announcements.
+- Add GCS Model 3 and eight-port Screamer Alert/Test recordings, plus Westminster
+  chimes for Whelen WPS-2900 and ASC E-Class and a WPS-4004 D864 air horn. Retain
+  the recorder’s Darley identification and ACA-prefixed archive naming discrepancy.
+- Expand to 49 signal recordings across 26 entries and 26 fallback shutdowns.
+  Expose Chime/Air horn as Real-only modes and show each model’s bundled modes,
+  including STH-10’s existing Alert/Test recordings, directly on its pad.
+- First Stop displays “Stopped · winding down”; a second Stop/Cancel or tap on a
+  coasting soundboard pad immediately ends that voice. Keep cabinet power-button
+  resume behavior, active-only green pads, and cleanup of pending sampled starts.
+- Update recording credits, inventory links, README, and regression coverage.
+  All 69 tests and the web build pass. Verify the two-stage controls in the
+  browser and all 75 audio assets against built hashes; all nine additional
+  Dropbox assets decode and retain their documented durations.
+
+## October 29, 2026 — Active-Only Green Pads and YouTube Recordings
+
+- Make green siren pads mean audio has started or is still winding down, rather
+  than merely having a file available. Keep idle pads neutral and unavailable
+  real-mode pads dark gray/black. File lookups remain cancellable without
+  showing green before audio starts; clear green after natural or forced stop.
+- Search YouTube’s Creative Commons results and check recorder descriptions.
+  Add public-domain audio excerpts by Blixt1000 — Redi Wolf for Thunderbolt 1003
+  Alert and WPS-4004’s steady audible-protection tone in Alert mode.
+- Expand the library to 42 signal recordings across 23 entries, plus 24 recorded
+  fallback tails. Credit each YouTube source with title, original hash, excerpt
+  times, and conversion notes. Preserve missing-file behavior for other models.
+- Cover pending versus audible state, coasting, and final color cleanup in tests.
+- All 64 tests and the web build pass. Verify idle/playing/coasting colors in
+  the browser and decode both new signals and their fallback tails against
+  their manifest durations and built-asset hashes.
+
+## October 29, 2026 — Continuous Real-Sound Coasting from the Current Tone
+
+- Supersede fixed recorded-tail transitions with a short sample captured at the
+  real recording’s current playhead. Lower its playback rate and gain using the
+  fake motor’s 60-second signal coast and 45-second Test feathering/tail profile.
+- Keep the recording’s timbre instead of switching to another clip at a different
+  pitch. Blend the grain seam and audio handoff to avoid abrupt transitions.
+- Re-power the same sampled voice from its remaining rate, then return to the
+  paused recording at full sampled speed; release during recovery coasts from
+  that intermediate rate rather than resetting it.
+- Keep finite shutdown deadlines independent of Loop, immediate signal-lamp
+  release, master mute/volume, pending-decode cancellation, and full cleanup.
+  Preserve the dedicated recorded tails as a fallback when decoding fails.
+- Document that Real coast-down now processes recorded samples, including any
+  captured field noise; the behavior is illustrative rather than an unedited
+  recording of an arbitrary hardware release point.
+- All 63 tests and the web build pass; verify sampled real coast and recovery in
+  the browser. Compare the sampled pitch curve directly with the fake motor and
+  cover exact silence, finite retirement, and interrupted recovery.
+
+## October 29, 2026 — Recorded Wind-downs on Real Release and Cancel
+
+- Replace the 150 ms Real-sound cancellation fade with 22 recorded shutdown
+  companions covering all 21 bundled model/series entries. Crossfade into the
+  actual tail and let it finish naturally; keep its original recorded duration.
+- Import dedicated public-domain shutdowns and attribute excerpts from existing
+  licensed recordings. Keep German Warning and All-clear tails mode-specific.
+- Immediately release the signal button/lamp, disable Loop during shutdown, and
+  keep the session tracked until the tail ends. Preserve recordings already in
+  their ending instead of restarting a full-speed tail.
+- Re-pressing a signal or Test crossfades back to the original paused playhead.
+  Clean up outgoing players, pending starts, timers, and nodes on source changes
+  or hard stop. Missing custom companions finish the original file instead of
+  abruptly fading out.
+- Document companion naming, approximate ending boundaries, real-playback limits,
+  and updated source credits; cover release, completion, Loop, resume, pending
+  cancellation, and all bundled shutdown assets in regression tests.
+- All 58 tests and the web build pass. All 22 shutdown files decode with their
+  documented durations and match built assets; verify recorded coast and resume
+  in the browser cabinet.
+
+## October 29, 2026 — Expand Real Recordings to 40 Sounds
+
+- Add 15 real recordings, bringing the bundled library to 40 files across 21
+  catalog entries. Add coverage for Modulator 6024, SiraTone EOWS 612, and Hörmann
+  HLS 273; HLS 273 includes German Warning (Attack) and All-clear (Alert).
+- Add accurately named catalog entries for Whelen WPS-3016 and analog 2000R,
+  Federal Signal Model 2T and SD-10, Darley 3V8, and Sterling M5. Preserve existing
+  recordings and keep unavailable mode/model combinations empty.
+- Include more public-domain files from Railroader3921, CC0 audio by 2887679652,
+  and CC BY recordings by SoundMaster391, mmcdona1, and dcf77. Retain recorder
+  names, source and license links, file hashes, and original processing notes.
+- Document local signal-pattern differences and recordings with background
+  sirens, wind noise, or clipping. Expand attribution and asset-integrity checks.
+- Verify all 40 files decode and match built assets; confirm HLS 273 Warning /
+  All-clear and layered Modulator playback in the browser. All 53 tests and the
+  web build pass. Generate the credits page from the provenance manifest.
+
+## October 29, 2026 — Bundle Licensed Real Siren Recordings
+
+- Add 25 local field recordings for 12 catalog entries, with Alert and short Test
+  blasts for Allertor 125, T-128, 2001-130, Model 5, Model 7, STH-10, STL-10,
+  Thunderbolt 1000T, Sentry 10V, Sentry 3V8-H, and a Whelen WPS-2900 series sample.
+- Include a Thunderbolt 1000 Alert, a T-128 Attack recording with another siren
+  audible, and a Thunderbolt 1000T fast wail in Fire mode. Preserve missing-file
+  messages for unavailable model/mode combinations instead of substituting audio.
+- Add a clearly labeled Whelen series card rather than assign an unidentified
+  array recording to individual 2901–2910 models. Real-mode descriptions explain
+  that actual recordings have their own lengths and wind-downs.
+- Bundle recording credits and provenance: public-domain collection by
+  Railroader3921; CC0 Freesound previews by mordeby and guitarguy1985. Document
+  transcoding, source URLs, file hashes, recorded modes, and background sounds.
+- Link credits from siren settings and document availability and offline use.
+- Verify all 25 files decode, match their manifest hashes and built assets, and
+  resolve only for the intended model/mode. Confirm layered real playback in
+  the browser; all 53 tests and the web build pass.
+
 ## October 29, 2026 — Longer Final Coasts and Released-Test Tails
 
 - Extend Attack, Fire, and Alert final coasts to 60 seconds from full speed,

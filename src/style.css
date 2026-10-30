@@ -511,8 +511,11 @@ button, input, select { touch-action: manipulation; }
 .stop-siren:disabled { opacity: .45; cursor: default; }
 .siren-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
 .siren-key { min-height: 160px; text-align: center; }
-.siren-key strong { color: #9de2d8; font-size: 13px; }
+.siren-key strong { color: #bdc5cf; font-size: 13px; }
 .siren-key.loaded { background: #21413e; }
+.siren-key.loaded strong { color: #9de2d8; }
+.siren-key.missing { background: #14171c; border-color: #ffffff12; color: #939aa4; }
+.siren-key.missing strong { color: #939aa4; }
 @media (max-width: 760px) {
   .app { padding-top: calc(16px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))); }
   .readout, .settings-row { grid-template-columns: minmax(0, 1fr); }

@@ -1,0 +1,674 @@
+{
+  "sourceUrl": "https://www.airraidsirens.net/forums/viewtopic.php?p=207616",
+  "downloadUrl": "https://www.dropbox.com/s/fwankb1ubvnlw7p/sirens.zip?dl=1",
+  "auditedDate": "2026-10-30",
+  "files": [
+    {
+      "originalFile": "aca_allertor_125_alert.wav",
+      "bytes": 4601056,
+      "durationSeconds": 104.331,
+      "includedAs": [
+        "aca-allertor-125-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "aca_allertor_125_end.wav",
+      "bytes": 2099530,
+      "durationSeconds": 47.607,
+      "includedAs": [
+        "aca-allertor-125-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "aca_allertor_125_noonwhistle.wav",
+      "bytes": 2624334,
+      "durationSeconds": 59.508,
+      "includedAs": [
+        "aca-allertor-125-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "aca_allertor_125_startloop.wav",
+      "bytes": 1573820,
+      "durationSeconds": 35.684,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "aca_screamer_8p_alert.wav",
+      "bytes": 3252204,
+      "durationSeconds": 73.745,
+      "includedAs": [
+        "darley-screamer-8-port-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "aca_screamer_8p_end.wav",
+      "bytes": 611162,
+      "durationSeconds": 13.858,
+      "includedAs": [
+        "darley-screamer-8-port-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "aca_screamer_8p_noonwhistle.wav",
+      "bytes": 944898,
+      "durationSeconds": 21.425,
+      "includedAs": [
+        "darley-screamer-8-port-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "aca_screamer_8p_startloop.wav",
+      "bytes": 426518,
+      "durationSeconds": 9.668,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "asc_t128_alert.wav",
+      "bytes": 3800340,
+      "durationSeconds": 86.175,
+      "includedAs": [
+        "american-signal-t-128-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "asc_t128_end.wav",
+      "bytes": 1385708,
+      "durationSeconds": 31.421,
+      "includedAs": [
+        "american-signal-t-128-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "asc_t128_noonwhistle.wav",
+      "bytes": 1607992,
+      "durationSeconds": 36.461,
+      "includedAs": [
+        "american-signal-t-128-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "asc_t128_startloop.wav",
+      "bytes": 2439660,
+      "durationSeconds": 55.318,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_2001_130_alert.wav",
+      "bytes": 3906686,
+      "durationSeconds": 88.586,
+      "includedAs": [
+        "federal-signal-2001-130-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_2001_130_end.wav",
+      "bytes": 1304384,
+      "durationSeconds": 29.577,
+      "includedAs": [
+        "federal-signal-2001-130-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_2001_130_noonwhistle.wav",
+      "bytes": 1648020,
+      "durationSeconds": 37.369,
+      "includedAs": [
+        "federal-signal-2001-130-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_2001_130_startloop.wav",
+      "bytes": 2113244,
+      "durationSeconds": 47.916,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_model5_8p_alert.wav",
+      "bytes": 3753688,
+      "durationSeconds": 85.117,
+      "includedAs": [
+        "federal-signal-model-5-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model5_8p_end.wav",
+      "bytes": 1114454,
+      "durationSeconds": 25.27,
+      "includedAs": [
+        "federal-signal-model-5-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model5_8p_noonwhistle.wav",
+      "bytes": 2741464,
+      "durationSeconds": 31.082,
+      "includedAs": [
+        "federal-signal-model-5-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model5_8p_startloop.wav",
+      "bytes": 239684,
+      "durationSeconds": 5.432,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_model7_alert.wav",
+      "bytes": 5000002,
+      "durationSeconds": 113.378,
+      "includedAs": [
+        "federal-signal-model-7-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model7_end.wav",
+      "bytes": 2444042,
+      "durationSeconds": 55.419,
+      "includedAs": [
+        "federal-signal-model-7-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model7_noonwhistle.wav",
+      "bytes": 2827966,
+      "durationSeconds": 64.125,
+      "includedAs": [
+        "federal-signal-model-7-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model7_startloop.wav",
+      "bytes": 324506,
+      "durationSeconds": 7.355,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_sd10_alert.wav",
+      "bytes": 4518146,
+      "durationSeconds": 102.451,
+      "includedAs": [
+        "federal-signal-sd-10-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_sd10_end.wav",
+      "bytes": 1838986,
+      "durationSeconds": 41.699,
+      "includedAs": [
+        "federal-signal-sd-10-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_sd10_noonwhistle.wav",
+      "bytes": 2062732,
+      "durationSeconds": 46.773,
+      "includedAs": [
+        "federal-signal-sd-10-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_sd10_startloop.wav",
+      "bytes": 762336,
+      "durationSeconds": 17.283,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_sth10_alert.wav",
+      "bytes": 11193976,
+      "durationSeconds": 126.915,
+      "includedAs": [
+        "federal-signal-sth-10-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_sth10_end.wav",
+      "bytes": 5964122,
+      "durationSeconds": 67.62,
+      "includedAs": [
+        "federal-signal-sth-10-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_sth10_noonwhistle.wav",
+      "bytes": 15567980,
+      "durationSeconds": 88.254,
+      "includedAs": [
+        "federal-signal-sth-10-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_sth10_startloop.wav",
+      "bytes": 711266,
+      "durationSeconds": 8.063,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_stl10_1phase_alert.wav",
+      "bytes": 4067072,
+      "durationSeconds": 92.223,
+      "includedAs": [
+        "federal-signal-stl-10-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_stl10_1phase_end.wav",
+      "bytes": 1469444,
+      "durationSeconds": 33.32,
+      "includedAs": [
+        "federal-signal-stl-10-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_stl10_1phase_noonwhistle.wav",
+      "bytes": 1856082,
+      "durationSeconds": 42.087,
+      "includedAs": [
+        "federal-signal-stl-10-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_stl10_1phase_startloop.wav",
+      "bytes": 1089244,
+      "durationSeconds": 24.696,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_thunderbolt1000t_alert.wav",
+      "bytes": 3185576,
+      "durationSeconds": 72.234,
+      "includedAs": [
+        "federal-signal-thunderbolt-1000t-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_thunderbolt1000t_end.wav",
+      "bytes": 605948,
+      "durationSeconds": 13.739,
+      "includedAs": [
+        "federal-signal-thunderbolt-1000t-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_thunderbolt1000t_noonwhistle.wav",
+      "bytes": 1208468,
+      "durationSeconds": 27.402,
+      "includedAs": [
+        "federal-signal-thunderbolt-1000t-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_thunderbolt1000t_startloop.wav",
+      "bytes": 1257750,
+      "durationSeconds": 28.517,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "gcs_model3_alert.wav",
+      "bytes": 22513088,
+      "durationSeconds": 127.625,
+      "includedAs": [
+        "gcs-model-3-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "gcs_model3_end.wav",
+      "bytes": 5989308,
+      "durationSeconds": 67.905,
+      "includedAs": [
+        "gcs-model-3-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "gcs_model3_noonwhistle.wav",
+      "bytes": 6279752,
+      "durationSeconds": 71.199,
+      "includedAs": [
+        "gcs-model-3-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "gcs_model3_startloop.wav",
+      "bytes": 2131144,
+      "durationSeconds": 24.161,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "sentry_10v_alert.wav",
+      "bytes": 4612438,
+      "durationSeconds": 104.589,
+      "includedAs": [
+        "sentry-10v-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sentry_10v_end.wav",
+      "bytes": 1967052,
+      "durationSeconds": 44.603,
+      "includedAs": [
+        "sentry-10v-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sentry_10v_noonwhistle.wav",
+      "bytes": 2212950,
+      "durationSeconds": 50.179,
+      "includedAs": [
+        "sentry-10v-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sentry_10v_startloop.wav",
+      "bytes": 759782,
+      "durationSeconds": 17.225,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "sentry_3v8h_alert.wav",
+      "bytes": 3744156,
+      "durationSeconds": 84.9,
+      "includedAs": [
+        "sentry-3v8-h-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sentry_3v8h_end.wav",
+      "bytes": 2366818,
+      "durationSeconds": 53.668,
+      "includedAs": [
+        "sentry-3v8-h-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sentry_3v8h_noonwhistle.wav",
+      "bytes": 3196640,
+      "durationSeconds": 36.243,
+      "includedAs": [
+        "sentry-3v8-h-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sentry_3v8h_startloop.wav",
+      "bytes": 451940,
+      "durationSeconds": 10.245,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "sterling_m5_16p_alert.wav",
+      "bytes": 4006228,
+      "durationSeconds": 90.843,
+      "includedAs": [
+        "sterling-m5-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sterling_m5_16p_end.wav",
+      "bytes": 1438168,
+      "durationSeconds": 32.611,
+      "includedAs": [
+        "sterling-m5-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sterling_m5_16p_noonwhistle.wav",
+      "bytes": 3795992,
+      "durationSeconds": 43.038,
+      "includedAs": [
+        "sterling-m5-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "sterling_m5_16p_startloop.wav",
+      "bytes": 492578,
+      "durationSeconds": 11.166,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "whelen_2000r_analog_alert.wav",
+      "bytes": 3212998,
+      "durationSeconds": 72.856,
+      "includedAs": [
+        "whelen-2000r-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_2000r_analog_end.wav",
+      "bytes": 473528,
+      "durationSeconds": 10.737,
+      "includedAs": [
+        "whelen-2000r-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_2000r_analog_noonwhistle.wav",
+      "bytes": 776528,
+      "durationSeconds": 17.607,
+      "includedAs": [
+        "whelen-2000r-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_2000r_analog_startloop.wav",
+      "bytes": 1764484,
+      "durationSeconds": 40.008,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "whelen_2900_560hz_alert.wav",
+      "bytes": 13616152,
+      "durationSeconds": 70.917,
+      "includedAs": [
+        "whelen-wps-2900-series-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_2900_560hz_end.wav",
+      "bytes": 571618,
+      "durationSeconds": 6.48,
+      "includedAs": [
+        "whelen-wps-2900-series-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_2900_560hz_noonwhistle.wav",
+      "bytes": 1198248,
+      "durationSeconds": 13.585,
+      "includedAs": [
+        "whelen-wps-2900-series-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_2900_560hz_startloop.wav",
+      "bytes": 5176138,
+      "durationSeconds": 58.685,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "whelen_2900_560hz_startloopdouble.wav",
+      "bytes": 5801694,
+      "durationSeconds": 65.777,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "whelen_2900_westminster.wav",
+      "bytes": 2112260,
+      "durationSeconds": 23.948,
+      "includedAs": [
+        "whelen-wps-2900-series-chime.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_voice_stlcountytest.wav",
+      "bytes": 3787504,
+      "durationSeconds": 21.471,
+      "includedAs": [],
+      "disposition": "Spoken test announcement; kept in the source pack, outside the siren tone catalog."
+    },
+    {
+      "originalFile": "whelen_voice_stlcountytestdouble.wav",
+      "bytes": 5083212,
+      "durationSeconds": 28.816,
+      "includedAs": [],
+      "disposition": "Spoken test announcement; kept in the source pack, outside the siren tone catalog."
+    },
+    {
+      "originalFile": "asc_eclass_westminsterchime.wav",
+      "bytes": 870932,
+      "durationSeconds": 19.748,
+      "includedAs": [
+        "american-signal-e-class-chime.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "darley_3v8_alert.wav",
+      "bytes": 3897234,
+      "durationSeconds": 88.372,
+      "includedAs": [
+        "darley-3v8-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "darley_3v8_end.wav",
+      "bytes": 1201422,
+      "durationSeconds": 27.242,
+      "includedAs": [
+        "darley-3v8-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "darley_3v8_noonwhistle.wav",
+      "bytes": 3546950,
+      "durationSeconds": 80.429,
+      "includedAs": [
+        "darley-3v8-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "darley_3v8_startloop.wav",
+      "bytes": 346992,
+      "durationSeconds": 7.865,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "federalsignal_model2t_alert.wav",
+      "bytes": 3606498,
+      "durationSeconds": 81.779,
+      "includedAs": [
+        "federal-signal-model-2t-alert.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model2t_end.wav",
+      "bytes": 1031014,
+      "durationSeconds": 23.378,
+      "includedAs": [
+        "federal-signal-model-2t-winddown.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model2t_noonwhistle.wav",
+      "bytes": 1097006,
+      "durationSeconds": 24.874,
+      "includedAs": [
+        "federal-signal-model-2t-test.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "federalsignal_model2t_startloop.wav",
+      "bytes": 833152,
+      "durationSeconds": 18.889,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    },
+    {
+      "originalFile": "whelen_4004_D864_airhorn_1min.wav",
+      "bytes": 5238076,
+      "durationSeconds": 59.388,
+      "includedAs": [
+        "whelen-wps-4004-airhorn.m4a"
+      ],
+      "disposition": "Imported as a playable signal or shutdown companion."
+    },
+    {
+      "originalFile": "whelen_4004_D864_airhorn_loop.wav",
+      "bytes": 1398872,
+      "durationSeconds": 15.859,
+      "includedAs": [],
+      "disposition": "Startup/loop building block, not a separate complete signal."
+    }
+  ]
+}

@@ -51,8 +51,8 @@ intercepted by mapped keyboard shortcuts.
 
 ## Sirens
 
-The catalog has 51 selected current/historical models from Whelen, Federal
-Signal, American Signal, ACA, Sentry, and Hörmann. Filter by manufacturer or
+The catalog has 60 selected current/historical models from Whelen, Federal
+Signal, American Signal, ACA, Sentry, Hörmann, Darley, Sterling, and GCS. Filter by manufacturer or
 search make, model, and type. Fake sounds are illustrative synthesis, not exact
 model recordings or standardized emergency signals. The catalog is expandable
 and is not exhaustive.
@@ -79,8 +79,53 @@ Volume is remembered across reloads. Zero mutes all real/fake sirens, including
 loops. The master output reaches exact silence after a brief click-prevention
 ramp. Fake waveform starts/stops are smoothed; there are no activation sounds.
 
-Real recordings live under `public/sounds/sirens/`, using the filename on each
-model button. Examples:
+Real sounds now includes 49 licensed field recordings across 26 catalog entries.
+Select **Real sounds**, then **Alert** or **Test / Growl** for the widest coverage.
+T-128 and Hörmann HLS 273 also have Attack recordings; Thunderbolt 1000T has
+a Fire / fast-wail recording. Missing combinations retain the add-files message.
+
+| Included model | Recorded modes |
+| --- | --- |
+| ACA Allertor 125 | Alert, Test |
+| American Signal T-128 | Alert, Test, Attack (another siren is audible) |
+| Federal Signal 2001-130, Model 5, Model 7, STH-10, STL-10 | Alert, Test |
+| Federal Signal Thunderbolt 1000 | Alert |
+| Federal Signal Thunderbolt 1000T | Alert, Test, Fire / fast wail |
+| Federal Signal Thunderbolt 1003 | Alert (YouTube field recording) |
+| Sentry 10V, 3V8-H | Alert, Test |
+| Whelen WPS-2900 series | Alert, Test, Chime (560 Hz series sample; array size unspecified) |
+| Whelen WPS-3016 | Alert |
+| Whelen WPS-4004 | Alert (steady audible-protection tone), Air horn (D864) |
+| Whelen 2000R (analog) | Alert, Test |
+| Federal Signal Model 2T, SD-10 | Alert, Test |
+| Federal Signal Modulator | Alert (6024; Thunderbolt audible in background) |
+| Federal Signal SiraTone EOWS 612 | Alert (monthly test; wind noise and some clipping) |
+| Hörmann HLS 273 | Attack (German Warning), Alert (German All-clear) |
+| Darley 3V8, Screamer (8-port), Sterling M5 (16-port), GCS Model 3 | Alert, Test |
+| American Signal E-Class | Chime (Westminster) |
+
+The Whelen series card is separate from the individual WPS-2901–2910 models;
+those models do not inherit a recording with an unidentified speaker configuration.
+Test recordings are short noon/test blasts, not synthesized hold-to-run motors.
+Real signals follow their recorded lengths, backgrounds, and wind-downs rather
+than the fake-mode timing table. Recorded fast wail does not imply the historic
+Thunderbolt 1003 hi-lo Fire signal.
+
+The main collection was dedicated to the public domain by Railroader3921:
+[source and dedication](https://www.airraidsirens.net/forums/viewtopic.php?p=207616).
+Additional recordings use public Freesound HQ previews: CC0 by mordeby,
+guitarguy1985, and 2887679652; CC BY 3.0 by SoundMaster391 and mmcdona1; and
+CC BY 4.0 by dcf77. Required credits and license links are bundled with the app.
+HLS 273 plays the actual German Warning / All-clear patterns, mapped to Attack /
+Alert; these do not follow the simulator’s US-style pattern durations.
+The bundled [credits page](public/sounds/sirens/CREDITS.html) and
+[file manifest](public/sounds/sirens/recordings.json) document original filenames,
+recorders, licenses, source URLs, hashes, transformations, and known limitations.
+These files are bundled locally for offline playback. WAV collection files are
+transcoded to 44.1 kHz AAC at 128 kbps; MP3 previews are copied without editing.
+
+To add more recordings, place them under `public/sounds/sirens/`, using the
+filename on each model button. Examples:
 
 ```text
 public/sounds/sirens/whelen-wps-2901-attack.mp3
@@ -112,8 +157,9 @@ Source, volume, and Loop controls use the same settings as the soundboard.
 off while the rotor coasts. Clicking that same signal again during coast-down
 reuses the existing rotor and its current speed. It accelerates back to the
 next full-speed part of the remaining sequence instead of starting from rest
-or resetting the whole sequence. Real recordings keep their current position
-when resumed before their short cancellation fade finishes.
+or resetting the whole sequence. Real recordings pause while a short sample of their current tone coasts down.
+Re-pressing the signal accelerates that same sample from its remaining speed,
+then crossfades back to the paused recording at matching playback speed.
 
 **Test is hold-to-run** in the cabinet: mouse/touch or Space/Enter powers the
 rotor while held, with no automatic cutoff. Release to coast down; hold again to
@@ -122,7 +168,9 @@ into a slower coast (about 45 seconds total from full speed). Reapplying power
 at any time continues from its remaining speed.
 A short hold produces a lower growl. Releasing overrides Loop. Pointer cancel,
 focus/window loss, or page hiding also releases Test. Real Test audio repeats
-while held and fades on release; it cannot synthesize motor behavior from a file.
+while held; releasing captures its current tone for a gradual 45-second sampled
+coast from full sampled speed. Re-pressing Test accelerates from the remaining
+speed instead of jumping to a prerecorded tail or restarting the signal.
 
 Back or Escape closes the cabinet and promptly stops audio. Changing sound
 source stops old playback. Switching signal modes uses the existing simulated
@@ -194,3 +242,54 @@ growls still stop sooner. These are illustrative settings inspired by the
 whose author reports a coast of over two minutes and fades the recording before
 the rotor stops. The app does not claim an exact measured stop time for that
 recording or identical behavior across all models.
+
+After updating recording metadata, regenerate the bundled attribution page with
+`node scripts/generate-siren-credits.mjs` before building.
+
+Real release and Cancel use a short, seam-blended sample captured from the
+recording at the current playhead. The sample’s playback rate and gain follow
+the fake motor’s continuous coast: 60 seconds for signals, and the same Test
+feathering response followed by a 45-second tail. Re-powering accelerates the
+same sample from its remaining rate, then returns to the paused file once the
+sample reaches its original pitch. Releasing during recovery reverses power on
+that same voice. No generic oscillator is substituted for the recording.
+
+The tiny captured sample loops internally to sustain the falling tone; that
+does not repeat the full recorded signal, and it always retires at the finite
+coast deadline even when the user’s Loop checkbox is off. Source changes,
+closing the cabinet, and hard stop cancel pending decoding and both audio paths.
+The signal lamp still goes out immediately on Cancel. These are processed real
+recordings with illustrative motor behavior, not unedited hardware recordings
+of every possible release point. Background sounds in a field recording can
+also be captured in the short sample.
+
+The 26 recorded shutdown companions remain as a fallback for audio that cannot
+be decoded into the sampled engine. Add `<model-id>-winddown.mp3` (or WAV, OGG,
+M4A), or `<model-id>-<mode>-winddown.*` for a mode-specific fallback. A fallback
+already in its recorded ending continues at its current playhead. Without a
+companion, fallback playback disables Loop and finishes the original file.
+
+Green siren pads indicate audio that has actually started or is still coasting.
+Available but idle pads stay neutral; real-mode combinations without a recording
+are dark gray/black. Pending file checks do not turn pads green.
+
+YouTube additions are audio excerpts from Blixt1000 — Redi Wolf, whose video
+descriptions explicitly dedicate them to the public domain: [WPS-4004](https://www.youtube.com/watch?v=HPNt4LDu5Z8)
+and [Thunderbolt 1003](https://www.youtube.com/watch?v=0AXmBPEAfA0). The manifest
+records titles, source URLs, original hashes, excerpt boundaries, processing, and
+credits. Missing models retain the add-files behavior rather than inheriting
+an unrelated model’s recording.
+
+The Dropbox collection has been audited file by file: see
+[all 79 source files](public/sounds/sirens/dropbox-inventory.json) for imported
+filenames and unused startup/loop components or spoken announcements. STH-10
+has Alert, Test, and a fallback shutdown; the source pack does not provide an
+Attack recording for it. Real-mode pads list the modes that are bundled so a
+missing selected mode does not hide the existence of other recordings. Chime
+and Air horn appear as additional Real-only modes; switching to Fake resets
+those selections to Attack. These non-motor recordings stop with a short fade.
+
+The first Stop tap removes power and shows **Stopped · winding down**. Press
+**Stop winding down** or tap that coasting soundboard pad again to end it
+immediately. Cancel in the cabinet follows the same two-stage behavior. The
+cabinet’s Test/Alert/Attack/Fire power buttons still resume a coasting siren.

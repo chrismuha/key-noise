@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 async function sourceModule(name) {
   const source = await readFile(new URL(`../src/${name}.js`, import.meta.url), 'utf8');
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
-const { sirens, soundSources, findSound } = await sourceModule('sirens');
+const { sirens, soundSources, findSound, findWindDown } = await sourceModule('sirens');
 const { startSimulatedSiren: createSimulatedSiren } = await sourceModule('siren-synthesis');
 const startSimulatedSiren = (context, siren, options) => createSimulatedSiren(context, siren, { setTimer: () => 0, clearTimer() {}, ...options });
 test('catalog provides unique portable filenames for every model and requested manufacturers', () => {
@@ -71,6 +72,11 @@ async function soundboard(loop = false) {
       close() {}
     } },
     findSound: async () => ({ url: './example.mp3', fileName: 'example.mp3' }),
+    findWindDown: async () => null,
+    getRecordingDetails: async () => null,
+    getRecordingCatalog: async () => null,
+    loadRecordedBuffer: async () => { throw new Error("Use recorded fallback in this backend"); },
+    startRecordedMotor() { throw new Error("No sampled backend configured"); },
     startSimulatedSiren(context, siren, options) {
       const preview = { transitionSignal(mode) { this.mode = mode; this.transitions = (this.transitions || 0) + 1; return true; }, resumeSignal() { this.signalResumes = (this.signalResumes || 0) + 1; return true; }, resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
       previews.push(preview);
@@ -83,7 +89,7 @@ async function soundboard(loop = false) {
       removeAttribute() {} load() {}
     }
   };
-  const board = runInNewContext(`${source}\n;({ play, stop, soundMode, playing, volume, readinessText, isMobile, boardPage, boardPageCount, visibleSirens, manufacturer, allowMultiple, getMasterVolume: () => masterVolume, sirenMode, simulatorSiren, openSimulator, closeSimulator, simulatorCommand, stopButton, beginSimulatorTest, releaseSimulatorTest, simulatorActiveMode })`, sandbox);
+  const board = runInNewContext(`${source}\n;({ play, stop, soundMode, playing, sounding, windingDown, status, volume, readinessText, isMobile, boardPage, boardPageCount, visibleSirens, manufacturer, allowMultiple, getMasterVolume: () => masterVolume, sirenMode, simulatorSiren, openSimulator, closeSimulator, simulatorCommand, stopButton, beginSimulatorTest, releaseSimulatorTest, simulatorActiveMode })`, sandbox);
   return { board, previews, recordings, nextTick, sandbox, props: properties };
 }
 test('fake sirens overlap and stopping or finishing one preserves the others', async () => {
@@ -175,7 +181,7 @@ test('looping fake sirens restart independently and Stop all cancels scheduled r
   assert.equal(queued.size, 0);
   assert.equal(board.playing.value.size, 0);
 });
-test('real loops play complete recordings and cancel with a short fade', async () => {
+test('custom real recordings without a companion stop looping and finish their own ending', async () => {
   const { board, recordings, sandbox, nextTick } = await soundboard(true);
   const queued = new Map(); let timerId = 0;
   sandbox.window.setTimeout = callback => { queued.set(++timerId, callback); return timerId; };
@@ -183,15 +189,16 @@ test('real loops play complete recordings and cancel with a short fade', async (
   board.soundMode.value = 'real'; await nextTick();
   await board.play(sirens[0]); await board.play(sirens[1]);
   assert.ok(recordings.every(audio => audio.loop));
-  assert.equal(queued.size, 0, 'no duration timer may truncate a recorded wind-down');
   await board.play(sirens[0]);
-  assert.equal(board.playing.value.size, 2, 'keep the cancelling voice tracked until its fade completes');
-  const [id, fadeEnded] = queued.entries().next().value;
-  queued.delete(id); fadeEnded();
+  assert.equal(recordings[0].loop, false);
+  assert.equal(recordings[1].loop, true);
+  assert.equal(board.playing.value.size, 2);
+  assert.equal(queued.size, 0, 'no short cancellation timer may truncate the recorded ending');
+  recordings[0].onended();
   assert.equal(board.playing.value.size, 1);
   assert.equal(recordings[0].paused, true);
-  assert.equal(recordings[1].paused, undefined);
-  board.stop(); assert.equal(queued.size, 0);
+  assert.notEqual(recordings[1].paused, true);
+  board.stop();
 });
 
 test('fake sirens share an exact 0–100% master volume, including new loop cycles', async () => {
@@ -315,7 +322,7 @@ test('scrolling cancels long press without playing, and disposal clears the time
 test('every motor cycle has a complete rise and fall even with one second of powered time', () => {
   for (const mode of ['attack', 'alert', 'fire', 'test']) {
     const nodes = [];
-    const parameter = () => ({ points: [], setValueAtTime(value, time) { this.points.push([value, time]); }, linearRampToValueAtTime(value, time) { this.points.push([value, time]); }, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+    const parameter = () => ({ points: [], cancelScheduledValues() {}, setValueAtTime(value, time) { this.points.push([value, time]); }, linearRampToValueAtTime(value, time) { this.points.push([value, time]); }, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
     const node = () => { const n = { gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop(time) { this.end = time; } }; nodes.push(n); return n; };
     const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator: node };
     const playback = startSimulatedSiren(context, sirens[0], { duration: 1, volume: 1, mode, onEnded() {} });
@@ -824,4 +831,345 @@ test('natural final coasts retain a long tail and can be re-powered without rest
   const speed = motor.speed;
   assert.equal(motor.resume(), true);
   assert.equal(motor.speed, speed);
+});
+
+
+test('bundled real recordings match catalog modes, provenance, and intact audio files', async () => {
+  const base = new URL('../public/sounds/sirens/', import.meta.url);
+  const { recordings } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
+  const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
+  assert.equal(recordings.length, 49);
+  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 26);
+  assert.equal(new Set(recordings.map(r => `${r.sirenId}:${r.mode}`)).size, recordings.length);
+  for (const recording of recordings) {
+    const siren = sirens.find(s => s.id === recording.sirenId);
+    assert.ok(siren, recording.fileName);
+    assert.ok(soundSources(siren, recording.mode).some(s => s.fileName === recording.fileName));
+    assert.ok(recording.author && recording.license && recording.notes);
+    assert.ok(credits.includes(recording.author), 'credits must name each recorder');
+    assert.ok(credits.includes(recording.sourceUrl), 'credits must link each source');
+    assert.ok(credits.includes(recording.licenseUrl), 'credits must link each license');
+    assert.match(recording.sourceUrl, /^https:\/\//);
+    assert.ok(recording.durationSeconds > 2);
+    const data = await readFile(new URL(recording.fileName, base));
+    assert.equal(data.length, recording.bytes);
+    assert.equal(createHash('sha256').update(data).digest('hex'), recording.sha256);
+    if (recording.fileName.endsWith('.m4a')) assert.equal(data.toString('ascii', 4, 8), 'ftyp');
+    else assert.ok(data.toString('ascii', 0, 3) === 'ID3' || data[0] === 0xff, recording.fileName);
+  }
+});
+
+test('real file lookup discovers bundled AAC and MP3 modes without assigning unrelated recordings', async () => {
+  const base = new URL('../public/sounds/sirens/', import.meta.url);
+  const { recordings } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async url => {
+      try {
+        await stat(new URL(url.split('/').at(-1), base));
+        return { ok: true, headers: new Headers({ 'content-type': url.endsWith('.m4a') ? 'audio/mp4' : 'audio/mpeg' }) };
+      } catch { return { ok: true, headers: new Headers({ 'content-type': 'text/html' }) }; }
+    };
+    for (const recording of recordings) {
+      assert.equal((await findSound(sirens.find(s => s.id === recording.sirenId), recording.mode)).fileName, recording.fileName);
+    }
+    assert.equal(await findSound(sirens.find(s => s.id === 'whelen-wps-2901'), 'alert'), null);
+    assert.equal(await findSound(sirens.find(s => s.id === 'federal-signal-thunderbolt-1000t'), 'attack'), null);
+    assert.equal(await findSound(sirens.find(s => s.id === 'sentry-10v'), 'fire'), null);
+  } finally { globalThis.fetch = original; }
+});
+
+test('recorded Test release plays a non-looping tail through completion and clears the lamp immediately', async () => {
+  const { board, recordings, sandbox, nextTick, props } = await soundboard(true);
+  const queued = new Map(); let timer = 0;
+  sandbox.window.setTimeout = callback => { queued.set(++timer, callback); return timer; };
+  sandbox.window.clearTimeout = id => queued.delete(id);
+  sandbox.findWindDown = async () => ({ url: './model-winddown.m4a', fileName: 'model-winddown.m4a' });
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.beginSimulatorTest();
+  board.releaseSimulatorTest(); await nextTick(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(board.simulatorActiveMode.value, null);
+  assert.equal(recordings.length, 2);
+  assert.equal(recordings[0].loop, false);
+  assert.equal(recordings[1].loop, false);
+  recordings[0].onended();
+  assert.equal(board.playing.value.size, 1, 'the outgoing signal ending cannot kill its shutdown track');
+  for (const [id, callback] of [...queued]) { queued.delete(id); callback(); }
+  assert.equal(recordings[0].paused, true);
+  assert.notEqual(recordings[1].paused, true);
+  assert.equal(board.playing.value.size, 1, 'the crossfade timer pauses the original, not the entire session');
+  props.loopSounds = false; await nextTick(); props.loopSounds = true; await nextTick();
+  assert.equal(recordings[0].loop, false);
+  assert.equal(recordings[1].loop, false, 'Loop cannot restart a shutdown');
+  recordings[1].onended();
+  assert.equal(board.playing.value.size, 0);
+  assert.ok(recordings.every(audio => audio.paused));
+});
+
+test('re-pressing recorded Test during its coast resumes the paused recording without rewinding', async () => {
+  const { board, recordings, sandbox, nextTick } = await soundboard();
+  const queued = new Map(); let timer = 0;
+  sandbox.window.setTimeout = callback => { queued.set(++timer, callback); return timer; };
+  sandbox.window.clearTimeout = id => queued.delete(id);
+  sandbox.findWindDown = async () => ({ url: './model-winddown.m4a' });
+  board.soundMode.value = 'real'; await nextTick(); board.openSimulator(sirens[0]);
+  await board.beginSimulatorTest();
+  recordings[0].currentTime = 9;
+  recordings[0].play = () => { recordings[0].paused = false; return Promise.resolve(); };
+  board.releaseSimulatorTest(); await nextTick(); await new Promise(resolve => setImmediate(resolve));
+  const lateEnded = recordings[1].onended;
+  for (const [id, callback] of [...queued]) { queued.delete(id); callback(); }
+  assert.equal(recordings[0].paused, true);
+  await board.beginSimulatorTest();
+  assert.equal(recordings.length, 2);
+  assert.equal(recordings[0].currentTime, 9);
+  assert.equal(recordings[0].paused, false);
+  assert.equal(recordings[0].loop, true);
+  assert.equal(board.simulatorActiveMode.value, 'test');
+  lateEnded();
+  assert.equal(board.playing.value.size, 1, 'an old coast callback cannot stop resumed playback');
+  board.stop();
+  assert.equal(queued.size, 0);
+  assert.ok(recordings.every(audio => audio.paused));
+});
+
+test('Cancel during an existing recorded ending leaves its playhead and tail intact', async () => {
+  const { board, recordings, sandbox, nextTick } = await soundboard(true);
+  sandbox.findWindDown = async () => ({ url: './model-winddown.m4a' });
+  sandbox.getRecordingDetails = async () => ({ windDownStartSeconds: 10 });
+  board.soundMode.value = 'real'; await nextTick();
+  await board.play(sirens[0]); recordings[0].currentTime = 13;
+  board.stopButton(); await nextTick(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(recordings.length, 1, 'do not restart a full-speed tail when already coasting');
+  assert.equal(recordings[0].currentTime, 13);
+  assert.equal(recordings[0].loop, false);
+  assert.equal(board.playing.value.size, 1);
+  recordings[0].onended();
+  assert.equal(board.playing.value.size, 0);
+});
+
+test('a source change tears down a pending recorded shutdown without late playback', async () => {
+  const { board, recordings, sandbox, nextTick } = await soundboard();
+  sandbox.findWindDown = async () => ({ url: './model-winddown.m4a' });
+  board.soundMode.value = 'real'; await nextTick(); await board.play(sirens[0]);
+  let resolveTail;
+  sandbox.Audio.prototype.play = function () { return new Promise(resolve => { resolveTail = resolve; }); };
+  board.stopButton(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(recordings.length, 2);
+  board.soundMode.value = 'fake'; await nextTick(); resolveTail(); await nextTick();
+  assert.equal(board.playing.value.size, 0);
+  assert.ok(recordings.every(audio => audio.paused));
+});
+
+test('every bundled model has an attributed, intact shutdown file and mode-specific tails win', async () => {
+  const base = new URL('../public/sounds/sirens/', import.meta.url);
+  const { recordings, windDowns } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
+  const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
+  assert.equal(windDowns.length, 26);
+  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 25);
+  for (const tail of windDowns) {
+    const data = await readFile(new URL(tail.fileName, base));
+    assert.equal(createHash('sha256').update(data).digest('hex'), tail.sha256);
+    assert.equal(data.length, tail.bytes);
+    assert.equal(data.toString('ascii', 4, 8), 'ftyp');
+    assert.ok(tail.durationSeconds > 2);
+    assert.ok(credits.includes(tail.author) && credits.includes(tail.sourceUrl) && credits.includes(tail.licenseUrl));
+  }
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async url => {
+      try { await stat(new URL(url.split('/').at(-1), base)); return { ok: true, headers: new Headers({ 'content-type': 'audio/mp4' }) }; }
+      catch { return { ok: true, headers: new Headers({ 'content-type': 'text/html' }) }; }
+    };
+    for (const recording of recordings.filter(recording => !['chime', 'airhorn'].includes(recording.mode))) {
+      assert.ok(await findWindDown(sirens.find(siren => siren.id === recording.sirenId), recording.mode), recording.fileName);
+    }
+    const hormann = sirens.find(siren => siren.id === 'h-rmann-hls-273');
+    assert.equal((await findWindDown(hormann, 'attack')).fileName, 'h-rmann-hls-273-attack-winddown.m4a');
+    assert.equal((await findWindDown(hormann, 'alert')).fileName, 'h-rmann-hls-273-alert-winddown.m4a');
+  } finally { globalThis.fetch = original; }
+});
+
+const { startRecordedMotor } = await sourceModule('recorded-motor');
+function sampledBackend() {
+  const timers = new Map(); let timer = 0;
+  const parameters = () => ({ points: [], cancelScheduledValues() {}, setValueAtTime(value, time) { this.points.push([value, time]); }, cancelAndHoldAtTime() {}, linearRampToValueAtTime(value, time) { this.points.push([value, time]); } });
+  const nodes = [];
+  const node = () => { const result = { gain: parameters(), frequency: parameters(), playbackRate: parameters(), connect() {}, disconnect() {}, start() {}, stop() {} }; nodes.push(result); return result; };
+  const context = { currentTime: 3, destination: {}, createGain: node, createOscillator: node, createBiquadFilter: node, createBufferSource: node,
+    createBuffer(channels, length, sampleRate) { const data = Array.from({ length: channels }, () => new Float32Array(length)); return { sampleRate, numberOfChannels: channels, length, getChannelData: channel => data[channel] }; }
+  };
+  const recording = context.createBuffer(2, 5000, 1000);
+  for (let channel = 0; channel < 2; channel++) for (let i = 0; i < 5000; i++) recording.getChannelData(channel)[i] = Math.sin(i * .37 + channel) * .3;
+  const options = { position: 2, destination: context.destination, onEnded() {}, setTimer(callback) { timers.set(++timer, callback); return timer; }, clearTimer(id) { timers.delete(id); } };
+  const fireTimers = () => { for (const [id, callback] of [...timers]) { timers.delete(id); callback(); } };
+  return { context, recording, nodes, options, fireTimers };
+}
+test('sampled real coasting follows the same pitch curve and duration as a fully wound fake motor', () => {
+  const backend = sampledBackend();
+  const motor = startRecordedMotor(backend.context, backend.recording, backend.options);
+  const fakeBackend = sampledBackend(); fakeBackend.context.currentTime = 0;
+  const fake = startSimulatedSiren(fakeBackend.context, sirens[0], { volume: 1, duration: 1, mode: 'attack', onEnded() {} });
+  fakeBackend.context.currentTime = 3; fake.stop();
+  assert.equal(motor.scheduledEnd, fake.scheduledEnd);
+  for (const elapsed of [0, 1, 10, 30, 45, 59, 60]) {
+    backend.context.currentTime = fakeBackend.context.currentTime = 3 + elapsed;
+    assert.ok(Math.abs(motor.speed - fake.speed) < 1e-9, `coast at ${elapsed}s`);
+  }
+  const sampledSource = backend.nodes[0];
+  assert.equal(sampledSource.buffer.numberOfChannels, 2);
+  assert.ok(sampledSource.buffer.length < backend.recording.length);
+  assert.ok(sampledSource.buffer.getChannelData(0).some(value => value !== 0));
+  assert.equal(sampledSource.loop, true, 'only a short captured grain loops; the signal cycle is never replayed');
+  motor.stop();
+});
+test('sampled Test retains feathering, a long tail, and current-speed recovery on repeated release', () => {
+  const { context, recording, options, fireTimers } = sampledBackend();
+  const motor = startRecordedMotor(context, recording, { ...options, held: true });
+  assert.equal(motor.scheduledEnd, 48.02);
+  context.currentTime = 3.5;
+  assert.ok(Math.abs(motor.speed - Math.pow(1 - .5 / 4, 1.6)) < 1e-9);
+  context.currentTime = 33;
+  const partial = motor.speed; assert.ok(partial > .1);
+  let ready = 0; assert.equal(motor.resume(() => ready++), true);
+  assert.equal(motor.speed, partial);
+  context.currentTime += .3;
+  assert.ok(motor.speed > partial);
+  const rising = motor.speed;
+  motor.windDown({ held: true });
+  assert.equal(motor.speed, rising, 'release during recovery cannot jump back to full speed');
+  context.currentTime = motor.scheduledEnd;
+  fireTimers();
+  assert.equal(ready, 0, 'cancelled recovery cannot hand off to the original signal');
+});
+test('a decoded recording powers down and recovers on one sampled voice before the paused file returns', async () => {
+  const { board, recordings, sandbox, nextTick } = await soundboard();
+  let ready; let starts = 0; let releases = 0;
+  const motor = { resume(callback) { ready = callback; return true; }, windDown() { releases++; }, fadeOut() {}, stop() {} };
+  sandbox.loadRecordedBuffer = async () => ({});
+  sandbox.startRecordedMotor = () => { starts++; return motor; };
+  board.soundMode.value = 'real'; await nextTick(); board.openSimulator(sirens[0]);
+  await board.beginSimulatorTest();
+  recordings[0].currentTime = 7;
+  board.releaseSimulatorTest(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(starts, 1);
+  assert.equal(recordings.length, 1, 'no unrelated tail recording replaces the current tone');
+  await board.beginSimulatorTest();
+  assert.equal(starts, 1);
+  board.releaseSimulatorTest();
+  assert.equal(releases, 1, 'release during acceleration reuses the same grain and its speed');
+  await board.beginSimulatorTest();
+  ready();
+  assert.equal(recordings[0].currentTime, 7);
+  assert.equal(board.playing.value.size, 1);
+  board.stop();
+});
+test('cancelling while a real recording decodes cannot create a late sampled voice', async () => {
+  const { board, sandbox, nextTick } = await soundboard();
+  let decoded; let starts = 0;
+  sandbox.loadRecordedBuffer = () => new Promise(resolve => { decoded = resolve; });
+  sandbox.startRecordedMotor = () => { starts++; };
+  board.soundMode.value = 'real'; await nextTick(); await board.play(sirens[0]);
+  board.stopButton();
+  board.soundMode.value = 'fake'; await nextTick(); decoded({}); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(starts, 0);
+  assert.equal(board.playing.value.size, 0);
+});
+test('sampled grain looping always reaches silence and retires once at the coast deadline', () => {
+  const { context, recording, options, nodes, fireTimers } = sampledBackend();
+  let ended = 0;
+  const motor = startRecordedMotor(context, recording, { ...options, onEnded() { ended++; } });
+  context.currentTime = motor.scheduledEnd;
+  assert.equal(motor.speed, 0);
+  assert.equal(nodes[1].gain.points.at(-1)[0], 0, 'the motor envelope reaches exact silence');
+  fireTimers(); fireTimers();
+  assert.equal(ended, 1);
+  assert.equal(motor.resume(() => {}), false, 'a retired grain cannot start playing again');
+});
+
+
+test('siren active styling follows started audio, remains during coast, and clears on finish', async () => {
+  const { board, sandbox, recordings, nextTick } = await soundboard();
+  board.soundMode.value = 'real'; await nextTick();
+  let resolveFile;
+  sandbox.findSound = () => new Promise(resolve => { resolveFile = resolve; });
+  const pending = board.play(sirens[0]);
+  assert.equal(board.playing.value.size, 1, 'pending work stays cancellable');
+  assert.equal(board.sounding.value.size, 0, 'pending lookup must not turn the pad green');
+  resolveFile({ url: './sound.mp3', fileName: 'sound.mp3' }); await pending;
+  assert.equal(board.sounding.value.has(sirens[0].id), true);
+  board.stopButton(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(board.sounding.value.has(sirens[0].id), true, 'a coasting pad stays green');
+  recordings[0].onended();
+  assert.equal(board.sounding.value.size, 0);
+});
+
+
+test('a second Stop hard-stops every coasting voice and clears green and winding-down state', async () => {
+  const { board, previews } = await soundboard();
+  await board.play(sirens[0]); await board.play(sirens[1]);
+  for (const preview of previews) preview.stop = function () { this.stopped = true; };
+  board.stopButton();
+  assert.equal(board.windingDown.value.size, 2);
+  assert.equal(board.sounding.value.size, 2);
+  assert.match(board.status.value, /Stopped.*winding down/);
+  board.stopButton();
+  assert.equal(board.playing.value.size, 0);
+  assert.equal(board.sounding.value.size, 0);
+  assert.equal(board.windingDown.value.size, 0);
+});
+test('tapping a coasting soundboard pad stops it; simulator power controls still resume', async () => {
+  const { board, previews } = await soundboard();
+  await board.play(sirens[0]); previews[0].stop = () => {};
+  await board.play(sirens[0]);
+  assert.equal(board.windingDown.value.has(sirens[0].id), true);
+  await board.play(sirens[0]);
+  assert.equal(board.playing.value.size, 0);
+  board.openSimulator(sirens[0]); await board.simulatorCommand('alert');
+  previews[1].stop = () => {};
+  board.stopButton(); await board.simulatorCommand('alert');
+  assert.equal(board.playing.value.size, 1);
+  assert.equal(board.windingDown.value.size, 0);
+  board.stop();
+});
+
+
+test('recorded chime and air-horn modes reset to Attack when switching to fake sounds', async () => {
+  const { board, nextTick } = await soundboard();
+  board.soundMode.value = 'real'; await nextTick();
+  board.sirenMode.value = 'chime'; await nextTick();
+  board.soundMode.value = 'fake'; await nextTick();
+  assert.equal(board.sirenMode.value, 'attack');
+});
+
+test('second Stop cancels a pending real coast decode without a late restart', async () => {
+  const { board, sandbox, nextTick } = await soundboard();
+  let decoded; let starts = 0;
+  sandbox.loadRecordedBuffer = () => new Promise(resolve => { decoded = resolve; });
+  sandbox.startRecordedMotor = () => { starts++; };
+  board.soundMode.value = 'real'; await nextTick(); await board.play(sirens[0]);
+  board.stopButton();
+  assert.equal(board.windingDown.value.size, 1);
+  board.stopButton();
+  decoded({}); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(starts, 0);
+  assert.equal(board.playing.value.size, 0);
+  assert.equal(board.sounding.value.size, 0);
+});
+test('Dropbox audit accounts for source files and exposes STH-10 playback and loop components accurately', async () => {
+  const base = new URL('../public/sounds/sirens/', import.meta.url);
+  const inventory = JSON.parse(await readFile(new URL('dropbox-inventory.json', base), 'utf8'));
+  const { recordings } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
+  assert.equal(inventory.files.length, 79);
+  assert.equal(new Set(inventory.files.map(file => file.originalFile)).size, 79);
+  for (const file of inventory.files) {
+    assert.ok(file.disposition && file.durationSeconds > 0);
+    for (const name of file.includedAs) assert.ok((await stat(new URL(name, base))).isFile());
+  }
+  const sth10 = recordings.filter(recording => recording.sirenId === 'federal-signal-sth-10');
+  assert.deepEqual(sth10.map(recording => recording.mode).sort(), ['alert', 'test']);
+  assert.match(inventory.files.find(file => file.originalFile === 'federalsignal_sth10_startloop.wav').disposition, /building block/);
+  assert.ok(recordings.some(recording => recording.sirenId === 'american-signal-e-class' && recording.mode === 'chime'));
+  assert.ok(recordings.some(recording => recording.sirenId === 'whelen-wps-4004' && recording.mode === 'airhorn'));
 });
