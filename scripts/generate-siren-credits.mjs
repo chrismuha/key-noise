@@ -1,12 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 const directory = new URL('../public/sounds/sirens/', import.meta.url);
-const { recordings, windDowns = [] } = JSON.parse(await readFile(new URL('recordings.json', directory), 'utf8'));
+const { recordings, windDowns = [], heldTests = [] } = JSON.parse(await readFile(new URL('recordings.json', directory), 'utf8'));
 const models = new Set(recordings.map(recording => recording.sirenId)).size;
 const escape = value => String(value).replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[character]));
-const rows = [...recordings, ...windDowns].map(recording => `<tr>
+const rows = [...recordings, ...windDowns, ...heldTests].map(recording => `<tr>
 <td>${escape(recording.model)}</td><td>${escape(recording.mode)}</td>
 <td>${escape(recording.author)}</td>
 <td><a href="${escape(recording.licenseUrl)}">${escape(recording.license)}</a></td>
@@ -26,9 +26,9 @@ p{margin:.4em 0}small{overflow-wrap:anywhere}.scroll{overflow-x:auto}th{white-sp
 </style>
 <main><a href="../../index.html">Back to Key Noise</a>
 <h1>Real siren recording credits</h1>
-<p>${recordings.length} signal recordings and ${windDowns.length} recorded shutdown tails for ${models} catalog entries. Choose Real sounds and the matching mode.
-These are field recordings with their own durations, background noise, and recorded wind-downs.
-Release and Cancel normally process a short sample of the current recording with gradual playback-rate and gain changes. Re-powering accelerates the same sample before returning to the paused file. Recorded shutdown companions are a fallback if sampling cannot decode the source. This processed playback is illustrative, not an unedited hardware recording of every possible release point.</p>
+<p>${recordings.length} signal recordings and ${windDowns.length} recorded shutdown tails and ${heldTests.length} authored Test startup/sustain assets for ${models} catalog entries. Choose Real sounds and the matching mode.
+These are field recordings with their own durations, background noise, and recorded wind-downs. Held Real Test uses actual recorded startup, the author’s steady-loop markers, and recorded shutdown at unmodified playback rate; partial re-presses use approximate recorded-position matching.
+Release and Cancel normally isolate the current recording’s narrow tonal peaks, reject broadband noise, and use a seamless periodic tone with gradual playback-rate and gain changes. Re-powering accelerates the same sample before returning to the paused file. Recorded shutdown companions are a fallback if sampling cannot decode the source. This processed playback is illustrative, not an unedited hardware recording of every possible release point.</p>
 <p>Railroader3921 and Blixt1000 — Redi Wolf publicly dedicated their linked recordings to the public domain.
 Freesound recordings below use CC0 1.0, CC BY 3.0, or CC BY 4.0, as specified for each file.
 Required attribution includes the named recorder, recording source, license link, and processing notes.

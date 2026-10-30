@@ -34,8 +34,10 @@
       "originalFile": "aca_allertor_125_startloop.wav",
       "bytes": 1573820,
       "durationSeconds": 35.684,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "aca-allertor-125-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "aca_screamer_8p_alert.wav",
@@ -68,8 +70,10 @@
       "originalFile": "aca_screamer_8p_startloop.wav",
       "bytes": 426518,
       "durationSeconds": 9.668,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "darley-screamer-8-port-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "asc_t128_alert.wav",
@@ -102,8 +106,10 @@
       "originalFile": "asc_t128_startloop.wav",
       "bytes": 2439660,
       "durationSeconds": 55.318,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "american-signal-t-128-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_2001_130_alert.wav",
@@ -136,8 +142,10 @@
       "originalFile": "federalsignal_2001_130_startloop.wav",
       "bytes": 2113244,
       "durationSeconds": 47.916,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-2001-130-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_model5_8p_alert.wav",
@@ -170,8 +178,10 @@
       "originalFile": "federalsignal_model5_8p_startloop.wav",
       "bytes": 239684,
       "durationSeconds": 5.432,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-model-5-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_model7_alert.wav",
@@ -204,8 +214,10 @@
       "originalFile": "federalsignal_model7_startloop.wav",
       "bytes": 324506,
       "durationSeconds": 7.355,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-model-7-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_sd10_alert.wav",
@@ -238,8 +250,10 @@
       "originalFile": "federalsignal_sd10_startloop.wav",
       "bytes": 762336,
       "durationSeconds": 17.283,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-sd-10-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_sth10_alert.wav",
@@ -272,8 +286,10 @@
       "originalFile": "federalsignal_sth10_startloop.wav",
       "bytes": 711266,
       "durationSeconds": 8.063,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-sth-10-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_stl10_1phase_alert.wav",
@@ -306,8 +322,10 @@
       "originalFile": "federalsignal_stl10_1phase_startloop.wav",
       "bytes": 1089244,
       "durationSeconds": 24.696,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-stl-10-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_thunderbolt1000t_alert.wav",
@@ -340,8 +358,10 @@
       "originalFile": "federalsignal_thunderbolt1000t_startloop.wav",
       "bytes": 1257750,
       "durationSeconds": 28.517,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-thunderbolt-1000t-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "gcs_model3_alert.wav",
@@ -374,8 +394,10 @@
       "originalFile": "gcs_model3_startloop.wav",
       "bytes": 2131144,
       "durationSeconds": 24.161,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "gcs-model-3-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "sentry_10v_alert.wav",
@@ -408,8 +430,10 @@
       "originalFile": "sentry_10v_startloop.wav",
       "bytes": 759782,
       "durationSeconds": 17.225,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "sentry-10v-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "sentry_3v8h_alert.wav",
@@ -442,8 +466,10 @@
       "originalFile": "sentry_3v8h_startloop.wav",
       "bytes": 451940,
       "durationSeconds": 10.245,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "sentry-3v8-h-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "sterling_m5_16p_alert.wav",
@@ -476,8 +502,10 @@
       "originalFile": "sterling_m5_16p_startloop.wav",
       "bytes": 492578,
       "durationSeconds": 11.166,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "sterling-m5-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "whelen_2000r_analog_alert.wav",
@@ -510,8 +538,10 @@
       "originalFile": "whelen_2000r_analog_startloop.wav",
       "bytes": 1764484,
       "durationSeconds": 40.008,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "whelen-2000r-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "whelen_2900_560hz_alert.wav",
@@ -544,8 +574,10 @@
       "originalFile": "whelen_2900_560hz_startloop.wav",
       "bytes": 5176138,
       "durationSeconds": 58.685,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "whelen-wps-2900-series-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "whelen_2900_560hz_startloopdouble.wav",
@@ -617,8 +649,10 @@
       "originalFile": "darley_3v8_startloop.wav",
       "bytes": 346992,
       "durationSeconds": 7.865,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "darley-3v8-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "federalsignal_model2t_alert.wav",
@@ -651,8 +685,10 @@
       "originalFile": "federalsignal_model2t_startloop.wav",
       "bytes": 833152,
       "durationSeconds": 18.889,
-      "includedAs": [],
-      "disposition": "Startup/loop building block, not a separate complete signal."
+      "includedAs": [
+        "federal-signal-model-2t-test-power.m4a"
+      ],
+      "disposition": "Used for hold-to-run Test with the author\u2019s startup/sustain loop markers."
     },
     {
       "originalFile": "whelen_4004_D864_airhorn_1min.wav",

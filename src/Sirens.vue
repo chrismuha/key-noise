@@ -5,6 +5,7 @@ import SirenSimulator from './SirenSimulator.vue';
 import { createSirenHold } from './siren-hold';
 import { startSimulatedSiren } from './siren-synthesis';
 import { loadRecordedBuffer, startRecordedMotor } from './recorded-motor';
+import { startHeldRecording } from './held-recording';
 const emit = defineEmits(['update:loopSounds']);
 const simulatorSiren = ref(null);
 const simulatorTestHeld = ref(false);
@@ -88,6 +89,7 @@ function finish(id, session) {
   if (simulatorSiren.value?.id === id) simulatorActiveMode.value = null;
   window.clearTimeout(session.timer);
   session.simulation?.stop({ immediate: true });
+  session.heldTest?.stop();
   clearRecordedCoast(session);
   for (const coast of session.retiringCoasts || []) disposeRecordedCoast(coast);
   if (session.audio) {
@@ -188,8 +190,13 @@ async function startRecordedCoast(id, session) {
     session.timer = window.setTimeout(() => { if (session.coast === pending) session.audio.pause(); }, 140);
     status.value = 'Stopped · winding down. Tap Stop again to stop immediately.';
     return;
-  } catch {
+  } catch (error) {
     if (!current()) return;
+    if (error?.code === 'NO_SIREN_TONE') {
+      finish(id, session);
+      status.value = 'Stopped.';
+      return;
+    }
     session.coast = null;
     // Retain the recorded-tail path if a custom format cannot be decoded.
     return startRecordedTail(id, session);
@@ -251,7 +258,10 @@ function windDown(id, session) {
   session.stopping = true;
   windingDown.value.add(id);
   window.clearTimeout(session.timer);
-  if (session.simulation) {
+  if (session.heldTest) {
+    session.heldTest.release();
+    status.value = 'Stopped · recorded wind-down. Tap Stop again to stop immediately.';
+  } else if (session.simulation) {
     session.simulation.stop();
     status.value = 'Stopped · winding down. Tap Stop again to stop immediately.';
   } else if (session.audio && session.output) {
@@ -332,6 +342,16 @@ async function simulatorCommand(mode, { held = false } = {}) {
 function beginSimulatorTest() {
   if (simulatorTestHeld.value) return;
   const session = sessions.get(simulatorSiren.value?.id);
+  if (session?.heldTest?.resume()) {
+    simulatorCommandRequest++;
+    simulatorTestHeld.value = true;
+    simulatorActiveMode.value = 'test';
+    session.held = true;
+    session.stopping = false;
+    windingDown.value.delete(simulatorSiren.value.id);
+    status.value = 'Test held · recorded wind-up and steady sustain.';
+    return;
+  }
   if (session?.simulation?.resume()) {
     simulatorCommandRequest++;
     simulatorTestHeld.value = true;
@@ -343,19 +363,7 @@ function beginSimulatorTest() {
     status.value = 'Test held · powering the current rotor.';
     return;
   }
-  if (session?.audio && (session.coast || !session.audio.paused)) {
-    simulatorCommandRequest++;
-    simulatorTestHeld.value = true;
-    simulatorActiveMode.value = 'test';
-    session.held = true;
-    session.stopping = false;
-    windingDown.value.delete(simulatorSiren.value?.id);
-    window.clearTimeout(session.timer);
-    resumeRecording(simulatorSiren.value.id, session);
-    session.audio.loop = true;
-    status.value = 'Test held · continuing the current recording.';
-    return;
-  }
+  if (session?.audio) finish(simulatorSiren.value.id, session);
   return simulatorCommand('test', { held: true });
 }
 function releaseSimulatorTest() {
@@ -433,6 +441,32 @@ async function play(siren, { held = false } = {}) {
     } catch {
       if (current()) { finish(siren.id, session); status.value = 'Could not start fake audio. Try the model button again.'; }
     }
+    return;
+  }
+  if (held) {
+    const manifest = await getRecordingCatalog();
+    if (!current()) return;
+    const definition = manifest?.heldTests?.find(test => test.sirenId === siren.id);
+    if (definition) {
+      try {
+        const destination = await getAudioOutput();
+        const [power, shutdown] = await Promise.all([
+          loadRecordedBuffer(context, `./sounds/sirens/${definition.fileName}`),
+          loadRecordedBuffer(context, `./sounds/sirens/${definition.windDownFileName}`)
+        ]);
+        if (!current()) return;
+        session.heldTest = startHeldRecording(context, power, shutdown, {
+          loopStart: definition.loopStartSeconds, loopEnd: definition.loopEndSeconds,
+          powerCurve: definition.powerCurve, windDownCurve: definition.windDownCurve,
+          destination, onEnded: () => { if (current()) { finish(siren.id, session); status.value = 'Recorded Test finished.'; } }
+        });
+        sounding.value.add(siren.id);
+        status.value = 'Test held · recorded wind-up and steady sustain.';
+      } catch { if (current()) { finish(siren.id, session); status.value = 'Could not load the recorded Test wind-up and shutdown.'; } }
+      return;
+    }
+    finish(siren.id, session);
+    status.value = 'No recorded hold-to-run Test assets for this model. Use a recorded Test tap or fake sounds.';
     return;
   }
   status.value = `Checking ${siren.model}…`;

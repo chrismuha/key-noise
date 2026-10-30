@@ -163,14 +163,15 @@ then crossfades back to the paused recording at matching playback speed.
 
 **Test is hold-to-run** in the cabinet: mouse/touch or Space/Enter powers the
 rotor while held, with no automatic cutoff. Release to coast down; hold again to
-reapply power from the current speed. Test retains its earlier release response for the first second, then settles
+reapply power from the current speed. Fake Test retains its earlier release response for the first second, then settles
 into a slower coast (about 45 seconds total from full speed). Reapplying power
 at any time continues from its remaining speed.
 A short hold produces a lower growl. Releasing overrides Loop. Pointer cancel,
-focus/window loss, or page hiding also releases Test. Real Test audio repeats
-while held; releasing captures its current tone for a gradual 45-second sampled
-coast from full sampled speed. Re-pressing Test accelerates from the remaining
-speed instead of jumping to a prerecorded tail or restarting the signal.
+focus/window loss, or page hiding also releases Test. Real Test uses 18 dedicated startup/sustain assets with the author’s WAV loop
+markers. Startup plays once; holding loops only the steady section, with no
+wind-down or automatic cutoff. Release plays the actual recorded shutdown at
+its original rate. A partial re-press selects a nearby matching position in the
+recorded startup before returning to sustain; matching is approximate.
 
 Back or Escape closes the cabinet and promptly stops audio. Changing sound
 source stops old playback. Switching signal modes uses the existing simulated
@@ -246,8 +247,9 @@ recording or identical behavior across all models.
 After updating recording metadata, regenerate the bundled attribution page with
 `node scripts/generate-siren-credits.mjs` before building.
 
-Real release and Cancel use a short, seam-blended sample captured from the
-recording at the current playhead. The sample’s playback rate and gain follow
+Real release and Cancel isolate the narrow tonal peaks in a short window of
+the recording at the current playhead, then build a seamless periodic tone.
+Raw wind/traffic noise and the old short-loop seam are excluded. The sample’s playback rate and gain follow
 the fake motor’s continuous coast: 60 seconds for signals, and the same Test
 feathering response followed by a 45-second tail. Re-powering accelerates the
 same sample from its remaining rate, then returns to the paused file once the
@@ -260,8 +262,9 @@ coast deadline even when the user’s Loop checkbox is off. Source changes,
 closing the cabinet, and hard stop cancel pending decoding and both audio paths.
 The signal lamp still goes out immediately on Cancel. These are processed real
 recordings with illustrative motor behavior, not unedited hardware recordings
-of every possible release point. Background sounds in a field recording can
-also be captured in the short sample.
+of every possible release point. When no clear siren tone is detectable, playback stops rather than looping
+background noise. The normal recording remains unmodified; this tonal
+processing applies only to the interactive coast/recovery path.
 
 The 26 recorded shutdown companions remain as a fallback for audio that cannot
 be decoded into the sampled engine. Add `<model-id>-winddown.mp3` (or WAV, OGG,
@@ -293,3 +296,10 @@ The first Stop tap removes power and shows **Stopped · winding down**. Press
 **Stop winding down** or tap that coasting soundboard pad again to end it
 immediately. Cancel in the cabinet follows the same two-stage behavior. The
 cabinet’s Test/Alert/Attack/Fire power buttons still resume a coasting siren.
+
+Real **held Test** follows its recorded audio rather than the signal-mode tonal
+coast engine. It never loops a complete test blast or stretches/synthesizes its
+shutdown. All 18 bundled models with Test recordings have recorded power assets.
+A model without authored hold-to-run assets shows an unavailable message instead
+of repeatedly winding down while Test is held. Normal Test taps still play the
+complete recorded test blast. Fake Test and its existing timings are unchanged.

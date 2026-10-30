@@ -1,5 +1,37 @@
 # key-noise Change List
 
+## October 30, 2026 — Actual Recorded Hold-to-Run Test
+
+- Import 18 dedicated recorded startup/sustain assets using the original WAV
+  smpl loop markers. Real Test winds up once and loops only the authored steady
+  region while held; it never repeats a complete blast with a wind-down inside.
+- On release, play the actual recorded shutdown at its unmodified rate, bypassing
+  tonal resynthesis and artificial coast timing for held Test. Re-press selects
+  a nearby recorded startup position using approximate tone/amplitude guides.
+- Preserve immediate lamp release, second-tap hard stop, finite shutdown cleanup,
+  and pending-start cancellation. Missing hold-to-run assets show an unavailable
+  message rather than looping an inappropriate full recording.
+- Include power recordings in credits and the Dropbox inventory; cover authored
+  looping, native-rate shutdown, partial re-press, completion, and asset integrity.
+- All 77 tests and the web build pass. All 18 power assets decode with their
+  recorded durations and valid authored sustain-loop boundaries.
+
+## October 30, 2026 — Remove Fan-like Noise from Interactive Wind-downs
+
+- Replace raw field-recording grain loops with a seamless periodic tone built
+  only from prominent narrow spectral peaks at the current playhead. Reject
+  broadband wind/traffic noise and low rumble instead of stretching them into
+  a fan-like sound during coast-down.
+- Preserve the recording’s tonal harmonics and stereo phase while retaining the
+  existing coast/recovery timing, volume, second-tap stop, and cleanup behavior.
+- If no clear tone is detected, stop instead of replaying background noise or
+  jumping to an unrelated full-speed tail. Normal recorded playback is unchanged.
+- Add numerical tests for preserved siren harmonics, rejected low-frequency
+  rumble/broadband noise, and noise-only cleanup. Check tonal extraction against
+  STH-10, Thunderbolt 1003, and Whelen recordings at multiple playheads.
+- All 72 tests and the web build pass; verify the filtered real-coast path and
+  second-tap stop in the browser.
+
 ## October 30, 2026 — Dropbox Collection Audit and Second-Tap Stop
 
 - Audit all 79 files in the original public-domain Dropbox ZIP and include an
