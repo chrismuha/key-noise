@@ -832,8 +832,8 @@ test('bundled real recordings match catalog modes, provenance, and intact audio 
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
   const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
-  assert.equal(recordings.length, 49);
-  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 26);
+  assert.equal(recordings.length, 56);
+  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 32);
   assert.equal(new Set(recordings.map(r => `${r.sirenId}:${r.mode}`)).size, recordings.length);
   for (const recording of recordings) {
     const siren = sirens.find(s => s.id === recording.sirenId);
@@ -943,8 +943,8 @@ test('every bundled model has an attributed, intact shutdown file and mode-speci
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings, windDowns } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
   const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
-  assert.equal(windDowns.length, 26);
-  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 25);
+  assert.equal(windDowns.length, 33);
+  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 31);
   for (const tail of windDowns) {
     const data = await readFile(new URL(tail.fileName, base));
     assert.equal(createHash('sha256').update(data).digest('hex'), tail.sha256);

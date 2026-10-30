@@ -1,5 +1,24 @@
 # key-noise Change List
 
+## October 30, 2026 — More Real Siren Recordings
+
+- Add seven attributed YouTube field recordings: Alert for Federal Signal 508
+  (508-128 catalog family), Model 2, Sentry 7V8-B, and Sentry 16V1T-B;
+  Attack for Whelen WPS-2905; Alert and Attack for Whelen Vortex (R4 Attack).
+- Expand coverage from 49 recordings / 26 catalog entries to 56 / 32. All
+  seven files carry the uploader-selected Creative Commons Attribution license.
+  Preserve titles, recorder credits, copyright notices, source links, original
+  hashes, and excerpt boundaries in the manifest and offline credits.
+- Trim lead-in/outro material and exclude the WPS-2905 spoken warning. Retain
+  field noise and identify variant/family limitations rather than assigning
+  unrelated audio to missing models.
+- Include seven actual shutdown excerpts, raising recorded fallback tails to
+  33. Keep held Test availability limited to the existing native hold assets;
+  these additions do not change Test behavior or invent unsupported modes.
+- Validation: all 77 tests, web build, and packaging dependency checks pass.
+  All 14 new signal/shutdown assets decode at their documented durations and
+  are included in the web build.
+
 ## October 30, 2026 — Actual Recorded Hold-to-Run Test
 
 - Import 18 dedicated recorded startup/sustain assets using the original WAV

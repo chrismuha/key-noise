@@ -79,7 +79,7 @@ Volume is remembered across reloads. Zero mutes all real/fake sirens, including
 loops. The master output reaches exact silence after a brief click-prevention
 ramp. Fake waveform starts/stops are smoothed; there are no activation sounds.
 
-Real sounds now includes 49 licensed field recordings across 26 catalog entries.
+Real sounds now includes 56 licensed field recordings across 32 catalog entries.
 Select **Real sounds**, then **Alert** or **Test / Growl** for the widest coverage.
 T-128 and Hörmann HLS 273 also have Attack recordings; Thunderbolt 1000T has
 a Fire / fast-wail recording. Missing combinations retain the add-files message.
@@ -93,6 +93,10 @@ a Fire / fast-wail recording. Missing combinations retain the add-files message.
 | Federal Signal Thunderbolt 1000T | Alert, Test, Fire / fast wail |
 | Federal Signal Thunderbolt 1003 | Alert (YouTube field recording) |
 | Sentry 10V, 3V8-H | Alert, Test |
+| Sentry 7V8 (7V8-B), 16V1T (16V1T-B) | Alert |
+| Federal Signal 508-128 (uploader identifies 508), Model 2 | Alert |
+| Whelen Vortex | Alert, Attack (R4 variant; other sirens audible) |
+| Whelen WPS-2905 | Attack (wail excerpt; voice excluded) |
 | Whelen WPS-2900 series | Alert, Test, Chime (560 Hz series sample; array size unspecified) |
 | Whelen WPS-3016 | Alert |
 | Whelen WPS-4004 | Alert (steady audible-protection tone), Air horn (D864) |
@@ -115,7 +119,10 @@ The main collection was dedicated to the public domain by Railroader3921:
 [source and dedication](https://www.airraidsirens.net/forums/viewtopic.php?p=207616).
 Additional recordings use public Freesound HQ previews: CC0 by mordeby,
 guitarguy1985, and 2887679652; CC BY 3.0 by SoundMaster391 and mmcdona1; and
-CC BY 4.0 by dcf77. Required credits and license links are bundled with the app.
+CC BY 4.0 by dcf77. YouTube additions by Blixt1000 and Brandon Mendel
+(DSRX100) use the uploader-selected Creative Commons Attribution license;
+original titles, source links, copyright notices, and excerpt boundaries are
+retained in the manifest and credits. Required credits and license links are bundled with the app.
 HLS 273 plays the actual German Warning / All-clear patterns, mapped to Attack /
 Alert; these do not follow the simulator’s US-style pattern durations.
 The bundled [credits page](public/sounds/sirens/CREDITS.html) and
@@ -266,7 +273,7 @@ of every possible release point. When no clear siren tone is detectable, playbac
 background noise. The normal recording remains unmodified; this tonal
 processing applies only to the interactive coast/recovery path.
 
-The 26 recorded shutdown companions remain as a fallback for audio that cannot
+The 33 recorded shutdown companions remain as a fallback for audio that cannot
 be decoded into the sampled engine. Add `<model-id>-winddown.mp3` (or WAV, OGG,
 M4A), or `<model-id>-<mode>-winddown.*` for a mode-specific fallback. A fallback
 already in its recorded ending continues at its current playhead. Without a

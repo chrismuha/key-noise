@@ -29,7 +29,8 @@ p{margin:.4em 0}small{overflow-wrap:anywhere}.scroll{overflow-x:auto}th{white-sp
 <p>${recordings.length} signal recordings and ${windDowns.length} recorded shutdown tails and ${heldTests.length} authored Test startup/sustain assets for ${models} catalog entries. Choose Real sounds and the matching mode.
 These are field recordings with their own durations, background noise, and recorded wind-downs. Held Real Test uses actual recorded startup, the author’s steady-loop markers, and recorded shutdown at unmodified playback rate; partial re-presses use approximate recorded-position matching.
 Release and Cancel normally isolate the current recording’s narrow tonal peaks, reject broadband noise, and use a seamless periodic tone with gradual playback-rate and gain changes. Re-powering accelerates the same sample before returning to the paused file. Recorded shutdown companions are a fallback if sampling cannot decode the source. This processed playback is illustrative, not an unedited hardware recording of every possible release point.</p>
-<p>Railroader3921 and Blixt1000 — Redi Wolf publicly dedicated their linked recordings to the public domain.
+<p>Railroader3921 and selected Blixt1000 — Redi Wolf recordings have public-domain dedications, as identified per file.
+Additional YouTube recordings by Blixt1000 and Brandon Mendel (DSRX100) carry the uploader-selected Creative Commons Attribution reuse license; original notices and excerpt boundaries are retained below.
 Freesound recordings below use CC0 1.0, CC BY 3.0, or CC BY 4.0, as specified for each file.
 Required attribution includes the named recorder, recording source, license link, and processing notes.
 Credits apply to the audio files; no endorsement by the recorders or manufacturers is implied.</p>
