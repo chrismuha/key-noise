@@ -4,7 +4,7 @@ import { sirens, findSound, findWindDown, getRecordingDetails, getRecordingCatal
 import SirenSimulator from './SirenSimulator.vue';
 import { createSirenHold } from './siren-hold';
 import { startSimulatedSiren } from './siren-synthesis';
-import { loadRecordedBuffer, startRecordedMotor } from './recorded-motor';
+import { loadRecordedBuffer } from './recorded-audio';
 import { startHeldRecording } from './held-recording';
 const emit = defineEmits(['update:loopSounds']);
 const simulatorSiren = ref(null);
@@ -107,7 +107,6 @@ function finish(id, session) {
 }
 function disposeRecordedCoast(coast) {
   window.clearTimeout(coast.timer);
-  if (coast.motor) { coast.motor.stop(); return; }
   if (!coast.audio) return;
   coast.audio.onended = null;
   coast.audio.onerror = null;
@@ -127,14 +126,11 @@ function clearRecordedCoast(session, fade = false) {
     coast.audio.onerror = null;
     coast.audio.onloadedmetadata = null;
   }
-  if (fade && (coast.output || coast.motor)) {
+  if (fade && coast.output) {
     session.retiringCoasts ||= new Set();
     session.retiringCoasts.add(coast);
-    if (coast.motor) coast.motor.fadeOut();
-    else {
-      coast.output.gain.cancelAndHoldAtTime(context.currentTime);
-      coast.output.gain.linearRampToValueAtTime(0, context.currentTime + 0.12);
-    }
+    coast.output.gain.cancelAndHoldAtTime(context.currentTime);
+    coast.output.gain.linearRampToValueAtTime(0, context.currentTime + 0.12);
     coast.timer = window.setTimeout(() => {
       disposeRecordedCoast(coast);
       session.retiringCoasts.delete(coast);
@@ -147,17 +143,6 @@ function resumeRecording(id, session) {
   window.clearTimeout(session.timer);
   session.stopping = false;
   windingDown.value.delete(id);
-  if (session.coast?.motor) {
-    const coast = session.coast;
-    coast.motor.resume(() => {
-      if (sessions.get(id) !== session || session.coast !== coast || session.stopping) return;
-      // At full sampled speed the original paused recording matches again.
-      clearRecordedCoast(session, true);
-      resumeRecording(id, session);
-    });
-    status.value = 'Winding the recording back up…';
-    return true;
-  }
   clearRecordedCoast(session, true);
   session.audio.loop = !session.stopping && ((session.held && simulatorTestHeld.value) || props.loopSounds);
   session.output.gain.cancelAndHoldAtTime(context.currentTime);
@@ -166,41 +151,6 @@ function resumeRecording(id, session) {
     if (sessions.get(id) === session) { finish(id, session); status.value = 'Could not resume the recording.'; }
   });
   return true;
-}
-async function startRecordedCoast(id, session) {
-  session.audio.loop = false;
-  if (session.coast?.motor) {
-    session.coast.motor.windDown({ held: session.held });
-    status.value = 'Stopped · winding down. Tap Stop again to stop immediately.';
-    return;
-  }
-  const pending = {};
-  session.coast = pending;
-  const current = () => !disposed && sessions.get(id) === session && session.coast === pending && session.stopping;
-  try {
-    const buffer = await loadRecordedBuffer(context, session.recordingUrl);
-    if (!current()) return;
-    if (session.audio.ended) { finish(id, session); return; }
-    pending.motor = startRecordedMotor(context, buffer, {
-      position: session.audio.currentTime, destination: masterVolume, held: session.held,
-      onEnded: () => { if (current()) { finish(id, session); status.value = 'Recorded siren finished coasting.'; } }
-    });
-    session.output.gain.cancelAndHoldAtTime(context.currentTime);
-    session.output.gain.linearRampToValueAtTime(0, context.currentTime + .12);
-    session.timer = window.setTimeout(() => { if (session.coast === pending) session.audio.pause(); }, 140);
-    status.value = 'Stopped · winding down. Tap Stop again to stop immediately.';
-    return;
-  } catch (error) {
-    if (!current()) return;
-    if (error?.code === 'NO_SIREN_TONE') {
-      finish(id, session);
-      status.value = 'Stopped.';
-      return;
-    }
-    session.coast = null;
-    // Retain the recorded-tail path if a custom format cannot be decoded.
-    return startRecordedTail(id, session);
-  }
 }
 async function startRecordedTail(id, session) {
   // Custom files without a shutdown companion finish their own recorded ending.
@@ -271,7 +221,7 @@ function windDown(id, session) {
       session.output.gain.linearRampToValueAtTime(0, context.currentTime + .5);
       session.timer = window.setTimeout(() => finish(id, session), 520);
       status.value = 'Stopped · winding down. Tap Stop again to stop immediately.';
-    } else void startRecordedCoast(id, session);
+    } else void startRecordedTail(id, session);
   } else finish(id, session);
 }
 
@@ -526,17 +476,7 @@ watch(volume, (value) => {
 watch(allowMultiple, () => { stop(); status.value = 'Choose a model to play.'; });
 watch(sirenMode, (mode) => {
   if (preservedModeChange === mode) preservedModeChange = null;
-  else {
-    for (const [id, session] of sessions) {
-      if (session.simulation?.transitionSignal(mode)) {
-        session.mode = mode;
-        session.held = false;
-        session.stopping = false;
-        window.clearTimeout(session.timer);
-        if (simulatorSiren.value?.id === id) simulatorActiveMode.value = mode;
-      } else windDown(id, session);
-    }
-  }
+  else stop();
   available.value = new Set();
   status.value = simulated.value ? modeDescriptions[mode] : 'Choose a ready model to play its recording.';
   scan();

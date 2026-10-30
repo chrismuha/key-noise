@@ -22,14 +22,10 @@ Key Noise's tester has no casino cabinet presets. To use another port:
 
 ## Keyboard and Mouse
 
-Both boards default to **Fake sounds**, which work immediately without files:
-27 distinct keyboard tones, separate left/right mouse sounds, and custom-pad
-previews. Each board has its own **Sound source** dropdown, remembered separately.
-Choose **Real sounds** to use recordings. No real recordings are included.
-
-Place real files in `public/sounds/`, named `sound1.mp3`, `sound2.mp3`, and onward.
-WAV, OGG, and M4A with the same names are also supported. Missing real files show
-the filename/folder prompt; fake sounds never replace missing files in Real mode.
+Keyboard and Mouse work immediately with built-in sounds: 27 distinct keyboard
+tones and separate left/right mouse sounds. Neither has a sound-source dropdown
+or needs sound files. Saved source preferences from older versions are ignored.
+The Real/Fake selector applies only to Sirens.
 
 The 27 keyboard slots follow this order:
 
@@ -39,15 +35,14 @@ A S D F G H J K L
 Z X C V B N M Space
 ```
 
-Q maps to sound1, W to sound2, and so on. Mouse uses sound1 for Left Click and
-sound2 for Right Click. Keyboard and Mouse each retain their own playback limit.
-Custom Combos support shortcut recording, MP3 uploads, and pinning to the board.
-Browser uploads use browser storage; Electron uses its native file picker.
+Each board retains its own playback limit. Custom Combos support shortcut
+recording, audio uploads, and pinning to the board. An uploaded custom file plays
+when provided; otherwise that custom pad uses a built-in sound. Browser uploads
+use browser storage; Electron uses its native file picker.
 
-Fake sounds support live volume, exact mute, Loop, and Stop all sounds. Browser
-volume also updates real audio already playing. Switching board or source stops
-its active keyboard/mouse sounds. Typing and focused button activation are not
-intercepted by mapped keyboard shortcuts.
+Sounds support live volume, exact mute, Loop, and Stop all sounds. Switching
+boards stops active keyboard/mouse audio. Typing and focused button activation
+are not intercepted by mapped keyboard shortcuts.
 
 ## Sirens
 
@@ -164,9 +159,10 @@ Source, volume, and Loop controls use the same settings as the soundboard.
 off while the rotor coasts. Clicking that same signal again during coast-down
 reuses the existing rotor and its current speed. It accelerates back to the
 next full-speed part of the remaining sequence instead of starting from rest
-or resetting the whole sequence. Real recordings pause while a short sample of their current tone coasts down.
-Re-pressing the signal accelerates that same sample from its remaining speed,
-then crossfades back to the paused recording at matching playback speed.
+or resetting the whole sequence in Fake mode. Real signals use their recorded
+shutdown at the original pitch and speed; re-pressing returns to the paused
+original signal. Fixed recordings cannot reproduce every intermediate rotor
+speed, and no synthesized coast is added in Real mode.
 
 **Test is hold-to-run** in the cabinet: mouse/touch or Space/Enter powers the
 rotor while held, with no automatic cutoff. Release to coast down; hold again to
@@ -182,9 +178,10 @@ recorded startup before returning to sustain; matching is approximate.
 
 Back or Escape closes the cabinet and promptly stops audio. Changing sound
 source stops old playback. Switching signal modes uses the existing simulated
-rotor, winding smoothly from its current speed into the new pattern. The mode
-dropdown also transitions playing simulated models in place. Real-file mode
-changes fade the old recording out and the new one in; their wind-up sound is
+rotor, winding smoothly from its current speed into the new pattern when using
+the cabinet buttons. Changing the main soundboard mode dropdown immediately
+stops all sirens. Cabinet Real-file mode changes fade the old recording out
+and the new one in; their wind-up sound is
 part of the supplied recording. Tab navigation remains scoped to cabinet sound buttons while open,
 and focus returns to the model on closing.
 
@@ -254,30 +251,20 @@ recording or identical behavior across all models.
 After updating recording metadata, regenerate the bundled attribution page with
 `node scripts/generate-siren-credits.mjs` before building.
 
-Real release and Cancel isolate the narrow tonal peaks in a short window of
-the recording at the current playhead, then build a seamless periodic tone.
-Raw wind/traffic noise and the old short-loop seam are excluded. The sample’s playback rate and gain follow
-the fake motor’s continuous coast: 60 seconds for signals, and the same Test
-feathering response followed by a 45-second tail. Re-powering accelerates the
-same sample from its remaining rate, then returns to the paused file once the
-sample reaches its original pitch. Releasing during recovery reverses power on
-that same voice. No generic oscillator is substituted for the recording.
+Real release and Cancel play the matching recorded shutdown companion at its
+original pitch and speed. If the original file is already in its ending, it
+continues from that playhead. Without a companion (or if it fails to play),
+Loop is disabled and the original recording finishes naturally. No generated
+tones, resynthesis, pitch shifting, or artificial coast timing enter Real mode.
+A short gain crossfade joins the original signal and recorded shutdown; an
+early release can still differ from a physical siren because these are fixed
+recordings. Resuming a signal returns to its paused original file.
 
-The tiny captured sample loops internally to sustain the falling tone; that
-does not repeat the full recorded signal, and it always retires at the finite
-coast deadline even when the user’s Loop checkbox is off. Source changes,
-closing the cabinet, and hard stop cancel pending decoding and both audio paths.
-The signal lamp still goes out immediately on Cancel. These are processed real
-recordings with illustrative motor behavior, not unedited hardware recordings
-of every possible release point. When no clear siren tone is detectable, playback stops rather than looping
-background noise. The normal recording remains unmodified; this tonal
-processing applies only to the interactive coast/recovery path.
-
-The 33 recorded shutdown companions remain as a fallback for audio that cannot
-be decoded into the sampled engine. Add `<model-id>-winddown.mp3` (or WAV, OGG,
-M4A), or `<model-id>-<mode>-winddown.*` for a mode-specific fallback. A fallback
-already in its recorded ending continues at its current playhead. Without a
-companion, fallback playback disables Loop and finishes the original file.
+The 33 recorded shutdown companions are the primary shutdown audio. Add
+`<model-id>-winddown.mp3` (or WAV, OGG, M4A), or
+`<model-id>-<mode>-winddown.*` for a mode-specific shutdown. Second Stop,
+source changes, and closing the cabinet dispose of both recorded audio paths.
+The signal lamp goes out immediately on Cancel.
 
 Green siren pads indicate audio that has actually started or is still coasting.
 Available but idle pads stay neutral; real-mode combinations without a recording
@@ -293,7 +280,7 @@ an unrelated model’s recording.
 The Dropbox collection has been audited file by file: see
 [all 79 source files](public/sounds/sirens/dropbox-inventory.json) for imported
 filenames and unused startup/loop components or spoken announcements. STH-10
-has Alert, Test, and a fallback shutdown; the source pack does not provide an
+has Alert, Test, and a recorded shutdown; the source pack does not provide an
 Attack recording for it. Real-mode pads list the modes that are bundled so a
 missing selected mode does not hide the existence of other recordings. Chime
 and Air horn appear as additional Real-only modes; switching to Fake resets
@@ -304,9 +291,46 @@ The first Stop tap removes power and shows **Stopped · winding down**. Press
 immediately. Cancel in the cabinet follows the same two-stage behavior. The
 cabinet’s Test/Alert/Attack/Fire power buttons still resume a coasting siren.
 
-Real **held Test** follows its recorded audio rather than the signal-mode tonal
-coast engine. It never loops a complete test blast or stretches/synthesizes its
+Real **held Test** uses only its recorded startup, steady sustain, and shutdown. It never loops a complete test blast or stretches/synthesizes its
 shutdown. All 18 bundled models with Test recordings have recorded power assets.
 A model without authored hold-to-run assets shows an unavailable message instead
 of repeatedly winding down while Test is held. Normal Test taps still play the
 complete recorded test blast. Fake Test and its existing timings are unchanged.
+
+## In-app Help
+
+Choose **Help** in the top toolbar for Known issues, Siren availability,
+Reported issues, and Controls & tips. The button hides with the header controls.
+The dialog includes searchable notes for every siren, actual bundled mode
+coverage, held-Test support, source limitations, and audio credits. Reported
+fixes are distinguished from remaining limitations; this is not a live tracker.
+Use Previous/Next or section buttons to navigate and Escape or Done to close.
+
+
+## Reusable Help and Contact Us
+
+Key Noise is the only project using this rollout so far. `src/Help.vue` is the
+portable component: it imports only Vue, owns both toolbar buttons and modal
+windows, and accepts `appName`, `version`, `sections`, and `releases` props.
+Company contact defaults are shared; `company`, `email`, `phone`, and `website`
+can override them. `update:open` tells the host to suspend background shortcuts.
+Named slots match each section ID; the optional `introduction` slot appears in
+Read Me. A release entry is `{ title, items: string[] }`, newest first. The
+component displays supplied titles without adding dates.
+
+`src/KeyNoiseHelp.vue` supplies app-specific issue/guide slots and siren data.
+`src/help-content.js` reads the current package version and converts the existing
+changelog to feature groups with dates removed from the headings. It preserves
+the full history without making up old version numbers. Other projects can use
+the exact same `Help.vue` with their own content provider; no rollout to them is
+authorized yet.
+
+Contact details are from [Muha Computer Repair](https://muhacomputer.com/):
+[muhachris297@gmail.com](mailto:muhachris297@gmail.com) and
+[(315) 338-1919](tel:+13153381919). Contact Us opens a popup; only selecting a
+contact link opens the mail or phone app. Help and Contact Us both hide when
+the header controls are collapsed.
+
+For this change, review uses the existing live dev browser. No build files,
+package versions, or build configuration are changed, and no test/build command
+is run.

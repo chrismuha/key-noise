@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage, shell } = require('electron');
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-compositing');
@@ -211,6 +211,13 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+
+  // Contact links open the user's mail/phone app instead of navigating the app.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!/^(mailto:|tel:)/i.test(url)) return;
+    event.preventDefault();
+    shell.openExternal(url).catch(() => { /* No mail/phone handler may be installed. */ });
   });
 
   const rendererReadyHandler = (event) => {

@@ -1,5 +1,74 @@
 # key-noise Change List
 
+## October 30, 2026 — Keyboard & Mouse Sounds Just Work
+
+- Remove the Real/Fake dropdown and old source preferences from Keyboard and
+  Mouse. Both now play their built-in sounds immediately, with no files needed.
+- Remove unused numbered-file scanning and missing-file prompts from these
+  boards. Pads say Play sound and keep separate playback limits, volume, Loop,
+  and Stop controls. The Sirens source selector is unchanged.
+- Custom keyboard pads play an uploaded file when supplied and a built-in
+  sound otherwise. A configured shortcut no longer requires an MP3 to be ready.
+- Update Help and documentation to describe automatic keyboard/mouse playback.
+- Browser review confirms both boards play without a source selector, old Real
+  preferences cannot disable playback, and Sirens retains its source selector.
+  No build files are changed and no test/build command is run.
+
+## October 30, 2026 — Help, Read Me & Contact Us
+
+- Help opens Read Me with the current app version and expandable historical
+  release notes. Dates are omitted from the displayed feature-group headings.
+- Keep Known issues, Siren availability, Reported issues, and Controls & tips
+  together with Read Me, including the limitations of recorded wind-downs and
+  the modes each siren has available.
+- Add Contact Us beside Help. Its popup has clickable email and phone buttons:
+  muhachris297@gmail.com and +1 (315) 338-1919, from muhacomputer.com.
+  Selecting a contact method opens the corresponding email or phone app.
+- Both buttons hide with the header controls. Escape and Done close either
+  popup, and keyboard focus returns to the button that opened it.
+
+## October 30, 2026 — In-App Help & Issue Notes
+
+- Add a Help button to the top toolbar. It hides with the header controls
+  and opens a formatted, scrollable dialog inspired by PDF Genie’s notes.
+- Separate Known issues, Siren availability, Reported issues, and Controls &
+  tips with section navigation, Previous/Next controls, and responsive layouts.
+- Document recorded shutdown inaccuracies, missing modes, fixed recording
+  behavior, held-Test requirements, field noise, and model/region differences.
+- Include all 60 siren models with searchable, manifest-driven mode coverage,
+  missing modes, held-Test/shutdown availability, source notes, and credits.
+- Track reported changes without claiming listening validation or a live issue
+  tracker. Explain playback, layering, looping, stopping, and keyboard navigation.
+- Support Escape, native modal focus containment, focus restoration, and normal
+  Tab navigation; reading the guide does not trigger keyboard/mouse sounds.
+- Validation: all 76 tests and the web build pass. Browser checks cover Help
+  sections, STH-10 coverage, missing WPS-2901 modes, Tab/Escape, header-hide
+  behavior, and the 320-pixel phone layout.
+
+## October 30, 2026 — Stop on Main Soundboard Mode Change
+
+- Changing the main mode dropdown immediately stops all playing, winding-down,
+  looping, and pending sirens. Selecting Attack while Alert plays no longer
+  changes or continues that sound; press a model button to start again.
+- Preserve the yellow simulator’s signal buttons and rotor transitions.
+- Cover layered fake/real playback and pending recording lookup cancellation.
+
+## October 30, 2026 — Real Sounds Stay Recorded on Cancel
+
+- Remove the harmonic resynthesis and sampled motor coast/recovery engine.
+  Real sirens, including STH-10, now Cancel into their actual matching shutdown
+  recording at unmodified pitch and speed. No artificial tone is mixed in.
+- Preserve an original ending already in progress. If a recorded shutdown is
+  missing or fails, disable looping and finish the original file naturally.
+- Keep native recorded held Test, fake-mode simulation, volume crossfades,
+  immediate signal-lamp release, and second-tap hard stop. Signal reactivation
+  returns to the paused original recording; fixed files limit physical realism.
+- Update documentation and credits to describe recorded-only playback; replace
+  obsolete synthesized-coast tests with recorded shutdown regressions.
+- Validation: all 73 tests and the web build pass, including cancellation in
+  all four signal modes, native recorded held Test, natural endings, failed
+  shutdown files, source changes, and second-tap hard stop.
+
 ## October 30, 2026 — More Real Siren Recordings
 
 - Add seven attributed YouTube field recordings: Alert for Federal Signal 508
