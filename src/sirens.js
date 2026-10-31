@@ -18,11 +18,11 @@ export const sirens = families.flatMap(([manufacturer, type, models]) => models.
   manufacturer, model, type,
   // Retain A's existing asset IDs and user-installed filenames.
   ...(model === 'STH-10A' ? { id: 'federal-signal-sth-10', unsupportedModes: ['pulse'] } : {}),
-  ...(model === 'STH-10B' ? { unsupportedModes: ['pulse'] } : {}),
+  ...(model === 'STH-10B' ? { unsupportedModes: ['pulse'], testMode: 'alert', recordingNote: 'Fredericktown, OH · Test uses Alert' } : {}),
   ...(model === 'STH-10C' ? {
-    sharedRecordingId: 'federal-signal-sth-10', sharedModes: ['alert', 'attack', 'fire'],
+    sharedRecordingId: 'federal-signal-sth-10', sharedModes: ['alert', 'attack', 'fire', 'test'], sharedTestMode: 'alert',
     synthesisId: 'federal-signal-sth-10',
-    recordingNote: 'Alert, Attack, Fire shared with STH-10A · Pulse capable'
+    recordingNote: 'Alert, Attack, Fire shared with STH-10A · Test uses Alert · Pulse capable'
   } : {}),
   ...(model === 'WPS-2900 series' ? { recordingNote: '560 Hz series sample · speaker configuration unspecified' } : {})
 }))).sort((a, b) =>
@@ -33,7 +33,10 @@ export const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
 export function soundSources(siren, mode) {
   if (siren.unsupportedModes?.includes(mode)) return [];
   const ids = [siren.id, ...(siren.sharedModes?.includes(mode) ? [siren.sharedRecordingId] : [])];
-  const names = ids.flatMap(id => mode ? [`${id}-${mode}`, ...(mode === 'attack' ? [id] : [])] : [id]);
+  const names = ids.flatMap(id => {
+    const signal = id === siren.sharedRecordingId && mode === 'test' ? siren.sharedTestMode || mode : mode === 'test' ? siren.testMode || mode : mode;
+    return signal ? [`${id}-${signal}`, ...(signal === 'attack' ? [id] : [])] : [id];
+  });
   return names.flatMap(name => audioExtensions.map(extension => ({
     fileName: `${name}.${extension}`,
     url: `./sounds/sirens/${name}.${extension}`
@@ -55,7 +58,10 @@ export async function findSound(siren, mode) {
 export async function findWindDown(siren, mode) {
   if (siren.unsupportedModes?.includes(mode)) return null;
   const ids = [siren.id, ...(siren.sharedModes?.includes(mode) ? [siren.sharedRecordingId] : [])];
-  for (const name of ids.flatMap(id => [`${id}-${mode}-winddown`, `${id}-winddown`])) {
+  for (const name of ids.flatMap(id => {
+    const signal = id === siren.sharedRecordingId && mode === 'test' ? siren.sharedTestMode || mode : mode === 'test' ? siren.testMode || mode : mode;
+    return [`${id}-${signal}-winddown`, `${id}-winddown`];
+  })) {
     for (const extension of audioExtensions) {
       const source = { fileName: `${name}.${extension}`, url: `./sounds/sirens/${name}.${extension}` };
       try {

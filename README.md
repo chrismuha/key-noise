@@ -75,7 +75,7 @@ Volume is remembered across reloads. Zero mutes all real/fake sirens, including
 loops. The master output reaches exact silence after a brief click-prevention
 ramp. Fake waveform starts/stops are smoothed; there are no activation sounds.
 
-Real sounds now includes 59 audio recordings across 33 catalog entries.
+Real sounds now includes 61 signal entries across 34 catalog models.
 Select **Real sounds**, then **Alert** or **Test / Growl** for the widest coverage.
 T-128, STH-10, and Hörmann HLS 273 also have Attack recordings; Thunderbolt 1000T has
 a Fire / fast-wail recording. Missing combinations retain the add-files message.
@@ -85,6 +85,8 @@ a Fire / fast-wail recording. Missing combinations retain the add-files message.
 | ACA Allertor 125 | Alert, Test |
 | American Signal T-128 | Alert, Test, Attack (another siren is audible) |
 | Federal Signal 2001-130, Model 5, Model 7, STL-10 | Alert, Test |
+| Federal Signal STH-10B | Alert, Test (Fredericktown, Ohio; held Test sustains until release) |
+| Federal Signal STH-10C | Alert, Attack, Fire shared with A; Test uses Alert; Pulse |
 | Federal Signal STH-10A | Alert, Test, Attack (Siren Archives synthesis) |
 | Federal Signal Thunderbolt 1000 | Alert |
 | Federal Signal Thunderbolt 1000T | Alert, Test, Fire / fast wail |
@@ -385,8 +387,8 @@ Missing Pulse recordings show the normal unavailable message.
 STH-10 variants have separate catalog listings: the existing entry is STH-10A
 (its filenames retain `federal-signal-sth-10` for compatibility). STH-10B has
 its own files. STH-10C shares A’s Alert, Attack, and Fire recordings and simulated
-patterns; C-specific files take priority. Within this family, only C offers Pulse.
-No B recordings are bundled. C Pulse is included; custom replacements use
+patterns; C-specific files take priority. C Test uses the shared Alert recording with a full-pitch sustain loop. Within this family, only C offers Pulse.
+B includes a Fredericktown, Ohio Alert recording, also used for Test with a full-pitch sustain loop. C Pulse is included; custom replacements use
 `federal-signal-sth-10c-pulse.mp3` (WAV, OGG, M4A also supported).
 
 The supplied [Siren Archives video](https://www.youtube.com/watch?v=uly8yG2oBCs)

@@ -1,5 +1,15 @@
 # key-noise Change List
 
+## October 31, 2026 — STH-10B/C Full-Pitch Test
+
+- Enable STH-10C Test using the shared Alert recording, with an authored steady
+  full-pitch loop that sustains until release and the matching recorded shutdown.
+- Add a Fredericktown, Ohio STH-10B Alert recording from YouTube, also used for
+  Test with an authored sustain loop and matching shutdown. Retain attribution
+  and state the source's unstated reuse-license metadata in recording credits.
+- Verify every recorded held-Test definition reaches full speed and stays powered
+  until release. Keep existing STH-10A Alert and Test audio unchanged.
+
 ## October 31, 2026 — Siren Controls and Continuous Switching
 
 - Preserve Test wind-down on the first explicit Cancel after releasing Test;

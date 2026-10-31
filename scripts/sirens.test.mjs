@@ -842,8 +842,8 @@ test('bundled real recordings match catalog modes, provenance, and intact audio 
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
   const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
-  assert.equal(recordings.length, 59);
-  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 33);
+  assert.equal(recordings.length, 61);
+  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 34);
   assert.equal(new Set(recordings.map(r => `${r.sirenId}:${r.mode}`)).size, recordings.length);
   for (const recording of recordings) {
     const siren = sirens.find(s => s.id === recording.sirenId);
@@ -953,8 +953,8 @@ test('every bundled model has an attributed, intact shutdown file and mode-speci
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings, windDowns } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
   const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
-  assert.equal(windDowns.length, 36);
-  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 32);
+  assert.equal(windDowns.length, 37);
+  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 33);
   for (const tail of windDowns) {
     const data = await readFile(new URL(tail.fileName, base));
     assert.equal(createHash('sha256').update(data).digest('hex'), tail.sha256);
@@ -1107,7 +1107,7 @@ test('recorded shutdown finishes exactly once and retired power sources cannot s
 test('all bundled Test recordings have attributed startup/sustain assets with valid authored loop markers', async () => {
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings, heldTests } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
-  assert.equal(heldTests.length, 18);
+  assert.equal(heldTests.length, 20);
   for (const recording of recordings.filter(recording => recording.mode === 'test')) {
     const asset = heldTests.find(test => test.sirenId === recording.sirenId);
     assert.ok(asset, recording.fileName);
@@ -1341,7 +1341,7 @@ test('STH-10 variants isolate B and Pulse while C shares only A standard signals
   assert.deepEqual(soundSources(a, 'pulse'), []);
   assert.deepEqual(soundSources(b, 'pulse'), []);
   assert.ok(soundSources(c, 'pulse').every(source => source.fileName.startsWith(`${c.id}-pulse.`)));
-  assert.ok(soundSources(c, 'test').every(source => source.fileName.startsWith(`${c.id}-test.`)));
+  assert.ok(soundSources(c, 'test').some(source => source.fileName === `${a.id}-alert.m4a`));
   assert.equal(c.synthesisId, a.id);
   const original = globalThis.fetch;
   try {
@@ -1558,4 +1558,26 @@ test('first Cancel after momentary fake Test preserves its coast and re-power re
   board.stopButton();
   assert.equal(hardStops, 1);
   assert.equal(board.playing.value.size, 0);
+});
+
+
+test('every authored held Test reaches full speed and sustains until release, including STH-10B/C', async () => {
+  const { heldTests } = JSON.parse(await readFile(new URL('../public/sounds/sirens/recordings.json', import.meta.url), 'utf8'));
+  for (const id of ['federal-signal-sth-10b', 'federal-signal-sth-10c']) assert.ok(heldTests.some(asset => asset.sirenId === id));
+  for (const asset of heldTests) {
+    const { context, voices } = heldRecordingBackend();
+    const motor = startHeldRecording(context, { duration: asset.durationSeconds }, { duration: 200 }, {
+      loopStart: asset.loopStartSeconds, loopEnd: asset.loopEndSeconds, powerCurve: asset.powerCurve, windDownCurve: asset.windDownCurve, onEnded() {}
+    });
+    context.currentTime = asset.durationSeconds + 1000;
+    assert.equal(motor.speed, 1, asset.model);
+    assert.equal(motor.phase, 'power', asset.model);
+    assert.equal(voices[0].loop, true);
+    assert.equal(voices.length, 1, 'no automatic shutdown while Test is held');
+    motor.release();
+    assert.equal(motor.phase, 'coast');
+    assert.equal(voices[1].loop, false);
+    assert.equal(voices[1].started.offset, 0, 'full speed releases into the beginning of shutdown');
+    motor.stop();
+  }
 });
