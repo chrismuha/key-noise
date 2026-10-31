@@ -1,10 +1,11 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-const props = defineProps({ siren: Object, running: Boolean, signalActive: Boolean, mode: String, activeMode: String, status: String, volume: Number, source: String, loop: Boolean });
+const props = defineProps({ siren: Object, availableModes: { type: Array, default: null }, heldTestAvailable: { type: Boolean, default: true }, running: Boolean, signalActive: Boolean, mode: String, activeMode: String, status: String, volume: Number, source: String, loop: Boolean });
 const emit = defineEmits(['command', 'test-start', 'test-end', 'cancel', 'close', 'update:volume', 'update:source', 'update:loop']);
 const panel = ref(null);
 const testHeld = ref(false);
 function pressTest(event) {
+  if (!available('test')) return;
   if (event.type === 'keydown' && (event.repeat || ![' ', 'Enter'].includes(event.key))) return;
   if (event.type === 'pointerdown' && (event.button !== 0 || event.isPrimary === false)) return;
   event.preventDefault();
@@ -24,7 +25,13 @@ function releaseTest() {
 function testKeyUp(event) {
   if ([' ', 'Enter'].includes(event.key)) { event.preventDefault(); releaseTest(); }
 }
+function available(id) {
+  if (id === 'cancel') return true;
+  if (props.siren.unsupportedModes?.includes(id)) return false;
+  return id === 'test' ? props.heldTestAvailable : !props.availableModes || props.availableModes.includes(id);
+}
 function activateButton(id, event) {
+  if (!available(id)) return;
   if (id === 'test') {
     // Assistive technologies can activate a button without pointer/key down events.
     if (event.detail === 0 && !testHeld.value) emit('command', 'test');
@@ -62,7 +69,7 @@ onBeforeUnmount(() => { releaseTest(); window.removeEventListener('blur', releas
       <div class="cabinet-model"><span>{{ siren.manufacturer }}</span><h2 id="simulator-title">{{ siren.model }}</h2><small>{{ siren.type }} · {{ source === 'fake' ? 'Simulated audio' : 'Real sound files' }}</small></div>
       <div class="cabinet-lights"><span><i class="pilot-light power-light"></i>Power</span><span><i class="pilot-light signal-light" :class="{ lit: signalActive }"></i>Signal</span></div>
       <div class="warning-control-plate">
-        <div class="cabinet-buttons"><button v-for="button in buttons.filter(button => !siren.unsupportedModes?.includes(button.id))" :key="button.id" type="button" class="cabinet-control" :class="[button.color, { engaged: button.id === 'test' ? testHeld && activeMode === 'test' : activeMode === button.id }]" :data-sound-button="button.id !== 'cancel' ? '' : undefined" :aria-label="button.id === 'cancel' ? 'Cancel siren' : `${button.label} ${siren.model}`" :aria-pressed="button.id === 'cancel' ? undefined : button.id === 'test' ? testHeld && activeMode === 'test' : activeMode === button.id" @pointerdown="button.id === 'test' && pressTest($event)" @pointerup="button.id === 'test' && releaseTest()" @pointercancel="button.id === 'test' && releaseTest()" @lostpointercapture="button.id === 'test' && releaseTest()" @keydown="button.id === 'test' && pressTest($event)" @keyup="button.id === 'test' && testKeyUp($event)" @blur="button.id === 'test' && releaseTest()" @click="activateButton(button.id, $event)"><span>{{ button.label }}</span><i aria-hidden="true"></i></button></div>
+        <div class="cabinet-buttons"><button v-for="button in buttons.filter(button => !siren.unsupportedModes?.includes(button.id))" :key="button.id" type="button" class="cabinet-control" :disabled="!available(button.id)" :title="available(button.id) ? button.label : `No ${button.label} recording available for this model`" :class="[button.color, { engaged: button.id === 'test' ? testHeld && activeMode === 'test' : activeMode === button.id }]" :data-sound-button="button.id !== 'cancel' ? '' : undefined" :aria-label="button.id === 'cancel' ? 'Cancel siren' : `${button.label} ${siren.model}`" :aria-pressed="button.id === 'cancel' ? undefined : button.id === 'test' ? testHeld && activeMode === 'test' : activeMode === button.id" @pointerdown="button.id === 'test' && pressTest($event)" @pointerup="button.id === 'test' && releaseTest()" @pointercancel="button.id === 'test' && releaseTest()" @lostpointercapture="button.id === 'test' && releaseTest()" @keydown="button.id === 'test' && pressTest($event)" @keyup="button.id === 'test' && testKeyUp($event)" @blur="button.id === 'test' && releaseTest()" @click="activateButton(button.id, $event)"><span>{{ button.label }}</span><i aria-hidden="true"></i></button></div>
         <p class="test-hold-hint">Hold Test to power · release to coast · hold again to resume</p>
         <h3>Warning Signal Control</h3><p>Local control station · {{ siren.model }}</p><small>Key Noise · Civil Defense Simulator</small>
       </div>

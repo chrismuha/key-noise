@@ -258,9 +258,13 @@ original pitch and speed. If the original file is already in its ending, it
 continues from that playhead. Without a companion (or if it fails to play),
 Loop is disabled and the original recording finishes naturally. No generated
 tones, resynthesis, pitch shifting, or artificial coast timing enter Real mode.
-A short gain crossfade joins the original signal and recorded shutdown; an
-early release can still differ from a physical siren because these are fixed
-recordings. Resuming a signal returns to its paused original file.
+A short gain crossfade joins the original signal and recorded shutdown.
+Analyzed mechanical recordings choose compatible measured pitch positions for
+Cancel and resume, without changing playback speed. Unreliable or missing
+profiles fall back to the normal recorded transition. Early release can still
+differ from a physical siren because these are fixed
+recordings. Resuming uses a compatible pitch position when available, otherwise
+the paused original position.
 
 The 36 recorded shutdown companions are the primary shutdown audio. Add
 `<model-id>-winddown.mp3` (or WAV, OGG, M4A), or
@@ -383,3 +387,9 @@ with matching shutdown companions and the original long endings. The uploader
 titles this source “All signals synth”; this description is retained in the
 manifest. No reuse license is stated in its metadata, and no copyright-expiration
 claim is made. Existing Alert and Attack recordings remain in use.
+
+Mechanical playback profiles are bundled in `public/sounds/sirens/playback-profiles.json`.
+Regenerate them with `python scripts/generate-playback-profiles.py /path/to/ffmpeg`
+(requires NumPy). No audio files are modified. Held Test interpolates its authored
+speed curves. Real simulator buttons are disabled when their matching recording
+is unavailable; held Test requires dedicated power assets.

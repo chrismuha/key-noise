@@ -6,7 +6,7 @@ async function sourceModule(name) {
   const source = await readFile(new URL(`../src/${name}.js`, import.meta.url), 'utf8');
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
-const { sirens, soundSources, findSound, findWindDown } = await sourceModule('sirens');
+const { sirens, soundSources, findSound, findWindDown, matchRecordedPosition } = await sourceModule('sirens');
 const { startSimulatedSiren: createSimulatedSiren } = await sourceModule('siren-synthesis');
 const startSimulatedSiren = (context, siren, options) => createSimulatedSiren(context, siren, { setTimer: () => 0, clearTimer() {}, ...options });
 test('catalog provides unique portable filenames for every model and requested manufacturers', () => {
@@ -74,6 +74,7 @@ async function soundboard(loop = false) {
     findSound: async () => ({ url: './example.mp3', fileName: 'example.mp3' }),
     findWindDown: async () => null,
     getRecordingDetails: async () => null,
+    matchRecordedPosition,
     getRecordingCatalog: async () => null,
     loadRecordedBuffer: async () => { throw new Error("Use recorded fallback in this backend"); },
     startHeldRecording() { throw new Error("No held recording backend configured"); },
@@ -412,7 +413,7 @@ test('cabinet Test handles pointer and keyboard holds without a second activatio
   const { ref } = await import('vue');
   const emitted = [];
   const script = (await readFile(new URL('../src/SirenSimulator.vue', import.meta.url), 'utf8')).split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
-  const control = runInNewContext(`${script}\n;({ pressTest, releaseTest, testKeyUp, activateButton })`, { ref, defineProps: () => ({}), defineEmits: () => (...args) => emitted.push(args), onMounted() {}, onBeforeUnmount() {} });
+  const control = runInNewContext(`${script}\n;({ pressTest, releaseTest, testKeyUp, activateButton })`, { ref, defineProps: () => ({ siren: sirens[0], availableModes: null, heldTestAvailable: true }), sirens, defineEmits: () => (...args) => emitted.push(args), onMounted() {}, onBeforeUnmount() {} });
   let captured = null;
   control.pressTest({ type: 'pointerdown', button: 0, pointerId: 7, preventDefault() {}, currentTarget: { focus() {}, setPointerCapture(id) { captured = id; } } });
   assert.equal(captured, 7);
@@ -1346,4 +1347,72 @@ test('STH-10 variants isolate B and Pulse while C shares only A standard signals
   assert.equal(previews.length, 0);
   await board.play(c);
   assert.equal(previews.length, 1);
+});
+
+
+test('recorded matching declines silence and unrelated pitches and prefers nearby signal positions', () => {
+  assert.equal(matchRecordedPosition([[0, 0], [1, 0]], .5, [[0, 600]]), null);
+  assert.equal(matchRecordedPosition([[0, 300], [1, 300]], .5, [[0, 600]]), null);
+  assert.equal(matchRecordedPosition([[0, 300], [1, 500]], .5, [[0, 500], [2, 400], [4, 200]]), 2);
+  assert.equal(matchRecordedPosition([[0, 400]], 0, [[0, 400], [10, 400]], { near: 9, end: 10 }), 0);
+});
+
+test('partial Real Cancel seeks a compatible shutdown pitch and resume matches back without changing rate', async () => {
+  const { board, sandbox, recordings, nextTick } = await soundboard();
+  sandbox.findWindDown = async () => ({ url: './tail.m4a', fileName: 'tail.m4a' });
+  sandbox.getRecordingDetails = async name => name === 'tail.m4a'
+    ? { pitchProfile: [[0, 600], [5, 400], [10, 200]] }
+    : { pitchProfile: [[0, 200], [1, 400], [2, 600], [3, 400]], windDownStartSeconds: 4 };
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]); await board.simulatorCommand('alert');
+  recordings[0].currentTime = 1;
+  board.stopButton(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(recordings[1].currentTime, 5, '400Hz cancels into 400Hz, not a full-speed tail');
+  recordings[1].currentTime = 10;
+  await board.simulatorCommand('alert');
+  assert.equal(recordings[0].currentTime, 0, '200Hz tail resumes the recorded startup at 200Hz');
+  assert.equal(recordings[0].playbackRate, undefined);
+  assert.equal(recordings[1].playbackRate, undefined);
+  board.stop();
+});
+
+test('held recording matches intermediate speeds between authored curve points', () => {
+  const { context, voices, options, power, tail } = heldRecordingBackend();
+  const player = startHeldRecording(context, power, tail, options);
+  context.currentTime = 1.5; player.release();
+  assert.ok(Math.abs(voices[1].started.offset - 15) < 1e-9, '50% startup interpolates halfway through the shutdown');
+  context.currentTime = 4; player.resume();
+  assert.ok(Math.abs(voices[2].started.offset - 1.25) < 1e-9, '40% remaining speed interpolates into startup');
+  player.stop();
+});
+
+
+test('unavailable cabinet commands and held Test cannot emit playback', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const { ref } = await import('vue');
+  const emitted = [];
+  const script = (await readFile(new URL('../src/SirenSimulator.vue', import.meta.url), 'utf8')).split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
+  const props = { siren: sirens[0], availableModes: ['alert'], heldTestAvailable: false };
+  const control = runInNewContext(`${script}\n;({ available, activateButton, pressTest })`, { ref, defineProps: () => props, defineEmits: () => (...args) => emitted.push(args), onMounted() {}, onBeforeUnmount() {} });
+  assert.equal(control.available('fire'), false);
+  control.activateButton('fire', { detail: 0 });
+  control.pressTest({ type: 'keydown', key: ' ', preventDefault() {} });
+  assert.equal(emitted.length, 0);
+  control.activateButton('alert', { detail: 0 });
+  control.activateButton('cancel', { detail: 0 });
+  assert.deepEqual(emitted, [['command', 'alert'], ['cancel', 'cancel']]);
+});
+
+test('bundled native-pitch profiles cover STH-10 early cancellation without editing audio', async () => {
+  const base = new URL('../public/sounds/sirens/', import.meta.url);
+  const profiles = JSON.parse(await readFile(new URL('playback-profiles.json', base), 'utf8'));
+  for (const [name, points] of Object.entries(profiles)) {
+    assert.ok((await stat(new URL(name, base))).isFile());
+    assert.ok(points.every(([time, hz], i) => Number.isFinite(time) && hz >= 0 && (!i || time > points[i - 1][0])));
+  }
+  const original = profiles['federal-signal-sth-10-alert.m4a'];
+  const tail = profiles['federal-signal-sth-10-winddown.m4a'];
+  const offset = matchRecordedPosition(original, 2, tail);
+  assert.ok(offset > 0, 'partial startup skips the full-speed beginning of the shutdown');
+  assert.ok(Math.abs(tail.find(([time]) => time === offset)[1] - original.find(([time]) => time === 2)[1]) < 25);
 });

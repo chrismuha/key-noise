@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
-import { sirens, findSound, findWindDown, getRecordingDetails, getRecordingCatalog } from './sirens';
+import { sirens, findSound, findWindDown, getRecordingDetails, getRecordingCatalog, matchRecordedPosition } from './sirens';
 import SirenSimulator from './SirenSimulator.vue';
 import { createSirenHold } from './siren-hold';
 import { startSimulatedSiren } from './siren-synthesis';
@@ -21,6 +21,7 @@ const allowMultiple = ref(true);
 const sirenMode = ref('attack');
 const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', pulse: 'Pulse', test: 'Test / Growl', chime: 'Chime', airhorn: 'Air horn' };
 const recordedModes = ref({});
+const heldTestModels = ref(new Set());
 const modeDescriptions = {
   attack: 'Ten continuous wails with shallow, gradual pitch dips; fully coasts down only at the end.',
   alert: 'One wind-up, a steady three-minute tone, then a gradual full coast-down.',
@@ -144,6 +145,13 @@ function resumeRecording(id, session) {
   window.clearTimeout(session.timer);
   session.stopping = false;
   windingDown.value.delete(id);
+  const coast = session.coast;
+  if (coast?.audio && session.recordingDetails?.pitchProfile && session.windDownDetails?.pitchProfile) {
+    const position = matchRecordedPosition(session.windDownDetails.pitchProfile, coast.audio.currentTime || 0, session.recordingDetails.pitchProfile, { near: session.audio.currentTime || 0, end: session.recordingDetails.windDownStartSeconds ?? Infinity });
+    if (position !== null) {
+      try { session.audio.currentTime = position; } catch { /* An unseekable custom file resumes its paused position. */ }
+    }
+  }
   clearRecordedCoast(session, true);
   session.audio.loop = !session.stopping && ((session.held && simulatorTestHeld.value) || props.loopSounds);
   session.output.gain.cancelAndHoldAtTime(context.currentTime);
@@ -167,6 +175,7 @@ async function startRecordedTail(id, session) {
     return;
   }
   const audio = new Audio(session.windDownSource.url);
+  const offset = matchRecordedPosition(session.recordingDetails?.pitchProfile, session.audio.currentTime || 0, session.windDownDetails?.pitchProfile);
   const coast = { audio };
   session.coast = coast;
   const current = () => !disposed && sessions.get(id) === session && session.coast === coast && session.stopping;
@@ -189,6 +198,13 @@ async function startRecordedTail(id, session) {
   };
   audio.onerror = fallback;
   try {
+    if (offset !== null) {
+      audio.onloadedmetadata = () => {
+        if (!current()) return;
+        try { audio.currentTime = Number.isFinite(audio.duration) ? Math.min(offset, Math.max(0, audio.duration - .01)) : offset; } catch { fallback(); }
+      };
+      audio.currentTime = offset;
+    }
     coast.source = context.createMediaElementSource(audio);
     coast.output = context.createGain();
     coast.output.gain.setValueAtTime(0, context.currentTime);
@@ -235,7 +251,7 @@ function openSimulator(siren) {
   simulatorCommandRequest++;
   stop();
   simulatorSiren.value = siren;
-  status.value = 'Power on. Choose Test, Alert, Fire, or Attack.';
+  status.value = 'Power on. Choose an available signal.';
 }
 function closeSimulator() {
   simulatorActiveMode.value = null;
@@ -438,6 +454,8 @@ async function play(siren, { held = false } = {}) {
     findWindDown(siren, session.mode), getRecordingDetails(source.fileName)
   ]);
   if (!current()) return;
+  session.windDownDetails = session.windDownSource?.fileName ? await getRecordingDetails(session.windDownSource.fileName) : null;
+  if (!current()) return;
   session.recordingUrl = source.url;
   const audio = new Audio(source.url);
   session.audio = audio;
@@ -495,6 +513,7 @@ watch(soundMode, (value) => {
 onMounted(() => {
   getRecordingCatalog().then(manifest => {
     if (disposed) return;
+    heldTestModels.value = new Set((manifest?.heldTests || []).map(test => test.sirenId));
     const modes = {};
     for (const recording of manifest?.recordings || []) {
       modes[recording.sirenId] ||= [];
@@ -517,7 +536,7 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
 
 <template>
   <section class="sirens-section" aria-label="Siren soundboard">
-    <SirenSimulator v-if="simulatorSiren" :siren="simulatorSiren" :running="playing.has(simulatorSiren.id)" :signal-active="Boolean(simulatorActiveMode)" :mode="sirenMode" :active-mode="simulatorActiveMode" :status="status" :volume="volume" :source="soundMode" :loop="props.loopSounds" @command="simulatorCommand" @test-start="beginSimulatorTest" @test-end="releaseSimulatorTest" @cancel="stopButton" @close="closeSimulator" @update:volume="volume = $event" @update:source="soundMode = $event" @update:loop="emit('update:loopSounds', $event)" />
+    <SirenSimulator v-if="simulatorSiren" :siren="simulatorSiren" :available-modes="simulated ? null : [...(recordedModes[simulatorSiren.id] || []), ...(available.has(simulatorSiren.id) ? [sirenMode] : [])]" :held-test-available="simulated || heldTestModels.has(simulatorSiren.id)" :running="playing.has(simulatorSiren.id)" :signal-active="Boolean(simulatorActiveMode)" :mode="sirenMode" :active-mode="simulatorActiveMode" :status="status" :volume="volume" :source="soundMode" :loop="props.loopSounds" @command="simulatorCommand" @test-start="beginSimulatorTest" @test-end="releaseSimulatorTest" @cancel="stopButton" @close="closeSimulator" @update:volume="volume = $event" @update:source="soundMode = $event" @update:loop="emit('update:loopSounds', $event)" />
     <div class="mobile-settings-content">
     <div class="section-title"><h2>Air Raid Sirens</h2><span>{{ filtered.length }} models</span></div>
     <p class="siren-note">Browse by make, model, and type. Choose fake sounds to play immediately, or real sounds for the included field recordings and your own files. Play several models together; click a playing model to stop just that siren. The simulations are playful approximations, not exact recordings of each model.</p>

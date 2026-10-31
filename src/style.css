@@ -675,3 +675,5 @@ button, input, select { touch-action: manipulation; }
   text-overflow: clip;
   line-height: 1.4;
 }
+
+.cabinet-control:disabled { opacity: .4; cursor: not-allowed; }

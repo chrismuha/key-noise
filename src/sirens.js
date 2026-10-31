@@ -75,5 +75,34 @@ export async function getRecordingCatalog() {
 }
 export async function getRecordingDetails(fileName) {
   const manifest = await getRecordingCatalog();
-  return manifest?.recordings?.find(recording => recording.fileName === fileName) || null;
+  const recording = [...(manifest?.recordings || []), ...(manifest?.windDowns || [])].find(recording => recording.fileName === fileName);
+  if (!recording) return null;
+  const profiles = await getPlaybackProfiles();
+  return { ...recording, pitchProfile: profiles?.[fileName] || null };
+}
+
+// Select compatible native-rate audio positions; never synthesize or change pitch.
+export function matchRecordedPosition(from, time, to, { near = 0, end = Infinity } = {}) {
+  if (!Array.isArray(from) || !from.length || !Array.isArray(to) || !to.length) return null;
+  let index = from.findIndex(point => point[0] >= time);
+  if (index < 0) index = from.length - 1;
+  const right = from[index], left = from[Math.max(0, index - 1)];
+  if (!(left[1] > 0 && right[1] > 0)) return null;
+  const fraction = Math.max(0, Math.min(1, (time - left[0]) / Math.max(.001, right[0] - left[0])));
+  const target = left[1] + fraction * (right[1] - left[1]);
+  let best = null, score = Infinity;
+  for (const [position, hz] of to) {
+    if (position >= end || !(hz > 0)) continue;
+    const difference = Math.abs(Math.log(hz / target));
+    if (difference > .06) continue; // Decline uncertain matches instead of jumping octaves.
+    const candidate = difference + Math.min(1, Math.abs(position - near) / 1000) * .005;
+    if (candidate < score) { score = candidate; best = position; }
+  }
+  return best;
+}
+let playbackProfiles;
+async function getPlaybackProfiles() {
+  playbackProfiles ||= fetch('./sounds/sirens/playback-profiles.json')
+    .then(response => response.ok ? response.json() : null).catch(() => null);
+  return await playbackProfiles;
 }

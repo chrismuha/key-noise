@@ -21,6 +21,14 @@ export function startHeldRecording(context, power, shutdown, {
   }
   function positionFor(curve, speed, fallback) {
     if (!curve.length) return fallback;
+    // Interpolate between curve points so partial presses do not snap in 200ms steps.
+    for (let i = 1; i < curve.length; i++) {
+      const [a, b] = [curve[i - 1], curve[i]];
+      if (a[1] === b[1]) { if (speed === a[1]) return a[0]; continue; }
+      if (speed >= Math.min(a[1], b[1]) && speed <= Math.max(a[1], b[1])) {
+        return a[0] + (b[0] - a[0]) * (speed - a[1]) / (b[1] - a[1]);
+      }
+    }
     return curve.reduce((best, point) => Math.abs(point[1] - speed) < Math.abs(best[1] - speed) ? point : best, curve[0])[0];
   }
   function playhead() { return current.offset + Math.max(0, context.currentTime - current.start); }

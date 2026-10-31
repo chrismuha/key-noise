@@ -1,5 +1,15 @@
 # key-noise Change List
 
+## October 30, 2026 — Recorded Transition and Availability Fixes
+
+- Match analyzed mechanical signal and shutdown pitch positions on Cancel
+  and resume, using original audio at unchanged playback rate. Decline uncertain
+  matches and preserve the existing recorded fallback.
+- Interpolate held-Test startup/shutdown curve positions between measurements.
+- Disable unavailable Real simulator commands and unsupported held Test.
+- Correct Help’s recorded-model count to include shared A/C coverage and describe
+  remaining recording limitations. Bundle reproducible playback-profile analysis.
+
 ## October 30, 2026 — Supplied STH-10 Pulse and Fire Audio
 
 - Import the supplied Siren Archives Pulse excerpt for C and Fire excerpt for
