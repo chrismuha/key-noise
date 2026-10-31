@@ -1,5 +1,16 @@
 # key-noise Change List
 
+## October 31, 2026 — Continuous Siren Signals
+
+- Keep Alert, Attack, Fire, Pulse, and latched Test running until stopped.
+  Momentary Test still winds down on release. Cabinet signal changes preserve
+  the current speed and existing crossfade.
+- Loop the powered section of bundled recordings at native rate, without
+  replaying startup or shutdown. Stop/Cancel plays the recorded shutdown once.
+- Continuously schedule simulated patterns on the same oscillators, with a
+  steady full-pitch Alert/Test and repeating Attack/Fire/Pulse patterns.
+- Keep the Loop checkbox for Keyboard/Mouse only; sirens are always continuous.
+
 ## October 31, 2026 — STH-10B/C Full-Pitch Test
 
 - Enable STH-10C Test using the shared Alert recording, with an authored steady

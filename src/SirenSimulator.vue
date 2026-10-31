@@ -78,7 +78,6 @@ onBeforeUnmount(() => { releaseTest(); window.removeEventListener('blur', releas
     <div class="simulator-options">
       <label class="settings-field"><span>Sound source</span><select :value="source" @change="emit('update:source', $event.target.value)"><option value="fake">Fake sounds</option><option value="real">Real sounds</option></select></label>
       <label class="settings-field"><span>Volume · {{ volume }}%</span><input :value="volume" type="range" min="0" max="100" step="1" aria-label="Simulator volume" @input="emit('update:volume', Number($event.target.value))" /></label>
-      <label class="loop-option"><input :checked="loop" type="checkbox" @change="emit('update:loop', $event.target.checked)" />Loop sounds</label>
     </div>
   </dialog>
 </template>

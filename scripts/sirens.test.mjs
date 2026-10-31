@@ -79,7 +79,7 @@ async function soundboard(loop = false) {
     loadRecordedBuffer: async () => { throw new Error("Use recorded fallback in this backend"); },
     startHeldRecording() { throw new Error("No held recording backend configured"); },
     startSimulatedSiren(context, siren, options) {
-      const preview = { transitionSignal(mode) { this.mode = mode; this.transitions = (this.transitions || 0) + 1; return true; }, resumeSignal() { this.signalResumes = (this.signalResumes || 0) + 1; return true; }, resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
+      const preview = { transitionSignal(mode) { this.mode = mode; this.transitions = (this.transitions || 0) + 1; return true; }, resumeSignal() { this.signalResumes = (this.signalResumes || 0) + 1; return true; }, resume() { this.stopped = false; this.resumed = (this.resumed || 0) + 1; return true; }, destination: options.destination, initialVolume: options.volume, continuous: options.continuous, mode: options.mode, held: options.held, stopped: false, stop() { this.stopped = true; options.onEnded(); }, setVolume(value) { this.volume = value; }, end: options.onEnded };
       previews.push(preview);
       return preview;
     },
@@ -759,13 +759,14 @@ test('layered sirens each play once when Loop starts off', async () => {
   assert.equal(previews.length, 3);
   assert.equal(board.playing.value.size, 0);
 });
-test('turning Loop off updates all active real recordings and lets each end once', async () => {
+test('sirens remain continuous when the keyboard/mouse Loop setting is turned off', async () => {
   const { board, recordings, props, nextTick } = await soundboard(true);
   board.soundMode.value = 'real'; await nextTick();
   await board.play(sirens[0]); await board.play(sirens[1]);
   props.loopSounds = false;
-  assert.ok(recordings.every(audio => audio.loop === false));
-  recordings.forEach(audio => audio.onended());
+  assert.ok(recordings.every(audio => audio.loop === true));
+  assert.equal(board.playing.value.size, 2);
+  board.stop();
   assert.equal(board.playing.value.size, 0);
   assert.equal(recordings.length, 2);
 });
@@ -1580,4 +1581,88 @@ test('every authored held Test reaches full speed and sustains until release, in
     assert.equal(voices[1].started.offset, 0, 'full speed releases into the beginning of shutdown');
     motor.stop();
   }
+});
+
+
+test('continuous fake signals run past their old duration and preserve speed on signal changes', () => {
+  for (const mode of ['alert', 'attack', 'fire', 'pulse', 'test']) {
+    const nodes = [];
+    const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {} });
+    const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+    const context = { currentTime: 0, destination: {}, createGain: node, createBiquadFilter: node, createOscillator() { const n = node(); nodes.push(n); return n; } };
+    const motor = startSimulatedSiren(context, sirens[0], { mode, continuous: true, volume: 1, onEnded() {} });
+    context.currentTime = 3600;
+    assert.equal(motor.scheduledEnd, Infinity, mode);
+    assert.ok(motor.speed >= .6, mode);
+    const speed = motor.speed;
+    motor.transitionSignal('alert');
+    assert.equal(motor.speed, speed);
+    assert.equal(nodes.length, 2, 'changing signals keeps the original oscillators');
+    assert.equal(motor.scheduledEnd, Infinity);
+    motor.stop();
+    assert.ok(Number.isFinite(motor.scheduledEnd));
+    motor.stop({ immediate: true });
+  }
+});
+
+test('all bundled signal loops exclude the recorded shutdown', async () => {
+  const { recordings } = JSON.parse(await readFile(new URL('../public/sounds/sirens/recordings.json', import.meta.url), 'utf8'));
+  for (const item of recordings.filter(item => !['chime', 'airhorn'].includes(item.mode))) {
+    assert.ok(item.sustainLoop.start >= 0, item.fileName);
+    assert.ok(item.sustainLoop.end > item.sustainLoop.start, item.fileName);
+    assert.ok(item.sustainLoop.end < (item.windDownStartSeconds ?? item.durationSeconds), item.fileName);
+  }
+});
+
+test('recorded signals loop their powered section and only enter shutdown after Cancel', async () => {
+  const { board, sandbox, nextTick } = await soundboard();
+  const motors = [];
+  sandbox.getRecordingDetails = async () => ({ sustainLoop: { start: 5, end: 20 }, windDownStartSeconds: 21 });
+  sandbox.findWindDown = async () => ({ url: './shutdown.m4a' });
+  sandbox.loadRecordedBuffer = async () => ({ duration: 50 });
+  sandbox.startHeldRecording = (context, power, shutdown, options) => {
+    const motor = { phase: 'power', position: 10, speed: 1, options, release() { this.phase = 'coast'; }, resume() { this.phase = 'power'; return true; }, stop() { this.stopped = true; } };
+    motors.push(motor); return motor;
+  };
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('alert');
+  assert.equal(motors[0].options.loopStart, 5);
+  assert.equal(motors[0].options.loopEnd, 20);
+  assert.equal(motors[0].phase, 'power');
+  await board.simulatorCommand('fire');
+  assert.equal(motors[1].phase, 'power');
+  assert.notEqual(motors[0].stopped, true, 'crossfade retains the outgoing signal');
+  board.stopButton();
+  assert.equal(motors[1].phase, 'coast');
+  board.stopButton();
+  assert.equal(motors[1].stopped, true);
+  assert.equal(motors[0].stopped, true);
+});
+
+
+test('soundboard requests continuous playback for every simulated signal', async () => {
+  const { board, previews, nextTick } = await soundboard();
+  for (const mode of ['alert', 'attack', 'fire', 'pulse', 'test']) {
+    board.sirenMode.value = mode; await nextTick();
+    await board.play(sirens[0]);
+    assert.equal(previews.at(-1).continuous, true, mode);
+    board.stop();
+  }
+});
+
+test('patterned recording wraps within the powered loop and cancels at its current pitch', () => {
+  const { context, voices } = heldRecordingBackend();
+  const motor = startHeldRecording(context, { duration: 30 }, { duration: 20 }, {
+    loopStart: 5, loopEnd: 10, patterned: true,
+    powerCurve: [[0, 0], [5, 1], [7, .5], [10, 1]],
+    windDownCurve: [[0, 1], [10, .5], [20, 0]], onEnded() {}
+  });
+  context.currentTime = 12;
+  assert.equal(motor.position, 7);
+  assert.equal(motor.speed, .5);
+  assert.equal(voices.length, 1, 'looping does not create another startup');
+  motor.release();
+  assert.equal(voices[1].started.offset, 10);
+  motor.stop();
 });

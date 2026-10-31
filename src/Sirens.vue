@@ -23,11 +23,11 @@ const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', pulse: 'Pul
 const recordedModes = ref({});
 const heldTestModels = ref(new Set());
 const modeDescriptions = {
-  attack: 'Ten continuous wails with shallow, gradual pitch dips; fully coasts down only at the end.',
-  alert: 'One wind-up, a steady three-minute tone, then a gradual full coast-down.',
-  fire: 'Fire: ten fast wails with shallow dips, followed by one final coast-down.',
-  pulse: 'Illustrative pulsed steady tone: one second on, one second off for three minutes, then a final coast-down.',
-  test: 'A low growl with a short wind-up and a complete coast-down.'
+  attack: 'Continuous wails with shallow pitch dips; Stop or Cancel starts the wind-down.',
+  alert: 'One wind-up, then a steady full-pitch tone until stopped.',
+  fire: 'Continuous fast wails with shallow dips until stopped.',
+  pulse: 'Pulsed steady tone: one second on, one second off until stopped.',
+  test: 'Full-pitch steady Test until stopped; hold Test in the panel and release to coast.'
 };
 function expectedFile(siren) { return `${siren.id}-${sirenMode.value}.mp3`; }
 const simulated = computed(() => soundMode.value === 'fake');
@@ -100,7 +100,8 @@ function disposeSession(session) {
   if (session.previous) { disposeSession(session.previous); session.previous = null; }
   session.simulation?.stop({ immediate: true });
   session.heldTest?.stop();
-  if (session.heldTest) session.output?.disconnect();
+  session.recordedSignal?.stop();
+  if (session.heldTest || session.recordedSignal) session.output?.disconnect();
   clearRecordedCoast(session);
   for (const coast of session.retiringCoasts || []) disposeRecordedCoast(coast);
   if (session.audio) {
@@ -178,7 +179,7 @@ function resumeRecording(id, session) {
     }
   }
   clearRecordedCoast(session, true);
-  session.audio.loop = !session.stopping && ((session.held && simulatorTestHeld.value) || props.loopSounds);
+  session.audio.loop = !session.stopping;
   session.output.gain.cancelAndHoldAtTime(context.currentTime);
   session.output.gain.linearRampToValueAtTime(1, context.currentTime + 0.15);
   session.audio.play().catch(() => {
@@ -250,8 +251,8 @@ function windDown(id, session) {
   session.stopping = true;
   windingDown.value.add(id);
   window.clearTimeout(session.timer);
-  if (session.heldTest) {
-    session.heldTest.release();
+  if (session.heldTest || session.recordedSignal) {
+    (session.heldTest || session.recordedSignal).release();
     status.value = 'Stopped · recorded wind-down. Tap Stop again to stop immediately.';
   } else if (session.simulation) {
     session.simulation.stop();
@@ -286,8 +287,17 @@ function closeSimulator() {
   simulatorSiren.value = null;
   status.value = 'Choose a model to play.';
 }
+function normalizedPitchCurve(profile) {
+  const points = profile?.filter(point => point[1] > 0) || [];
+  const peak = Math.max(1, ...points.map(point => point[1]));
+  return points.map(([time, hz]) => [time, hz / peak]);
+}
 function recordedState(session) {
-  if (session?.previous && !session.audio && !session.heldTest) return recordedState(session.previous);
+  if (session?.previous && !session.audio && !session.heldTest && !session.recordedSignal) return recordedState(session.previous);
+  if (session?.recordedSignal) return {
+    profile: session.recordedSignal.phase === 'coast' ? session.windDownDetails?.pitchProfile : session.recordingDetails?.pitchProfile,
+    time: session.recordedSignal.position, speed: session.recordedSignal.speed
+  };
   if (session?.heldTest) return { speed: session.heldTest.speed };
   if (!session?.audio) return null;
   const profile = session.coast ? session.windDownDetails?.pitchProfile : session.recordingDetails?.pitchProfile;
@@ -335,7 +345,7 @@ async function simulatorCommand(mode, { held = false } = {}) {
   if (!held && session?.mode === mode) {
     const continued = session.simulation
       ? (!session.stopping && !session.held) || session.simulation.resumeSignal()
-      : session.audio && session.output && (session.coast || !session.audio.paused);
+      : session.recordedSignal?.resume() || session.audio && session.output && (session.coast || !session.audio.paused);
     if (continued) {
       session.stopping = false;
       windingDown.value.delete(siren.id);
@@ -360,7 +370,7 @@ async function simulatorCommand(mode, { held = false } = {}) {
 function beginSimulatorTest() {
   if (simulatorTestHeld.value) return;
   const session = sessions.get(simulatorSiren.value?.id);
-  if (session?.heldTest?.resume()) {
+  if (session?.mode === 'test' && session?.heldTest?.resume()) {
     simulatorCommandRequest++;
     simulatorTestHeld.value = true;
     simulatorActiveMode.value = 'test';
@@ -451,7 +461,7 @@ async function play(siren, { held = false, transition = null, previous: handoff 
         }
         session.waitingToLoop = false;
         session.simulation = startSimulatedSiren(context, siren, {
-          duration: duration.value, volume: 1, destination, mode: session.mode, held: session.held,
+          duration: duration.value, volume: 1, destination, mode: session.mode, held: session.held, continuous: true,
           onEnded: () => {
             if (!current()) return;
             sounding.value.delete(siren.id);
@@ -472,7 +482,7 @@ async function play(siren, { held = false, transition = null, previous: handoff 
     }
     return;
   }
-  if (held) {
+  if (held || session.mode === 'test') {
     const manifest = await getRecordingCatalog();
     if (!current()) return;
     const definition = manifest?.heldTests?.find(test => test.sirenId === siren.id);
@@ -501,9 +511,11 @@ async function play(siren, { held = false, transition = null, previous: handoff 
       } catch { if (current()) { finish(siren.id, session); status.value = 'Could not load the recorded Test wind-up and shutdown.'; } }
       return;
     }
-    finish(siren.id, session);
-    status.value = 'No recorded hold-to-run Test assets for this model. Use a recorded Test tap or fake sounds.';
-    return;
+    if (held) {
+      finish(siren.id, session);
+      status.value = 'No recorded hold-to-run Test assets for this model. Use a recorded Test tap or fake sounds.';
+      return;
+    }
   }
   status.value = `Checking ${siren.model}…`;
   const source = await findSound(siren, sirenMode.value);
@@ -520,6 +532,35 @@ async function play(siren, { held = false, transition = null, previous: handoff 
   if (!current()) return;
   session.windDownDetails = session.windDownSource?.fileName ? await getRecordingDetails(session.windDownSource.fileName) : null;
   if (!current()) return;
+  if (session.recordingDetails?.sustainLoop && session.windDownSource) {
+    try {
+      const destination = await getAudioOutput();
+      const [power, shutdown] = await Promise.all([
+        loadRecordedBuffer(context, source.url), loadRecordedBuffer(context, session.windDownSource.url)
+      ]);
+      if (!current()) return;
+      const state = recordedState(session.previous) || transition;
+      const loop = session.recordingDetails.sustainLoop;
+      session.output = context.createGain();
+      session.output.gain.setValueAtTime(0, context.currentTime);
+      session.output.connect(destination);
+      session.recordedSignal = startHeldRecording(context, power, shutdown, {
+        loopStart: loop.start, loopEnd: loop.end,
+        initialOffset: transitionPosition(state, session.recordingDetails),
+        patterned: true,
+        powerCurve: normalizedPitchCurve(session.recordingDetails?.pitchProfile),
+        windDownCurve: normalizedPitchCurve(session.windDownDetails?.pitchProfile),
+        destination: session.output,
+        onEnded: () => { if (current()) finish(siren.id, session); }
+      });
+      session.output.gain.linearRampToValueAtTime(1, context.currentTime + .15);
+      completeTransition(session);
+      available.value.add(siren.id);
+      sounding.value.add(siren.id);
+      status.value = `Playing ${siren.manufacturer} ${siren.model} · until stopped`;
+    } catch { if (current()) { finish(siren.id, session); status.value = 'Could not load the continuous signal recording.'; } }
+    return;
+  }
   session.recordingUrl = source.url;
   const audio = new Audio(source.url);
   session.audio = audio;
@@ -530,7 +571,7 @@ async function play(siren, { held = false, transition = null, previous: handoff 
     try { seek(); } catch { /* Retry once metadata is available. */ }
   }
   audio.volume = 1;
-  audio.loop = !session.stopping && ((held && simulatorTestHeld.value) || props.loopSounds);
+  audio.loop = !session.stopping;
   audio.onended = () => { if (current() && !session.coast) { finish(siren.id, session); status.value = `${siren.model} finished.`; } };
   audio.onerror = () => { if (current()) { finish(siren.id, session); status.value = `Could not play ${source.fileName}. Check the audio file.`; } };
   try {
@@ -543,7 +584,7 @@ async function play(siren, { held = false, transition = null, previous: handoff 
     session.output.connect(destination);
     await audio.play();
     if (!current()) { audio.pause(); return; }
-    audio.loop = !session.stopping && ((session.held && simulatorTestHeld.value) || props.loopSounds);
+    audio.loop = !session.stopping;
     if (!session.coast) session.output.gain.linearRampToValueAtTime(1, context.currentTime + 0.15);
     completeTransition(session);
     available.value.add(siren.id);
@@ -556,7 +597,7 @@ async function play(siren, { held = false, transition = null, previous: handoff 
 }
 watch(() => props.loopSounds, (value) => {
   for (const [id, session] of sessions) {
-    if (session.audio) session.audio.loop = !session.stopping && ((session.held && simulatorTestHeld.value) || value);
+    if (session.audio) session.audio.loop = !session.stopping;
     if (!value && session.waitingToLoop) finish(id, session);
   }
 }, { flush: 'sync' });

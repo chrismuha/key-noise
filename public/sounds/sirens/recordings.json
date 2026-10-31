@@ -18,7 +18,11 @@
       "bytes": 1656541,
       "sha256": "feba14a27b3bb2ff9bcdc751eb3b4746eb4a87c12018157066b8dd10689c1afa",
       "windDownStartSeconds": 56.724,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 16.5,
+        "end": 53.25
+      }
     },
     {
       "sirenId": "aca-allertor-125",
@@ -37,7 +41,11 @@
       "bytes": 945632,
       "sha256": "24c09e1debbb4634be671ab35a60d8eb856dc085da1d052e2f2f8f7b60978cbf",
       "windDownStartSeconds": 11.901,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 2.975,
+        "end": 11.651
+      }
     },
     {
       "sirenId": "american-signal-t-128",
@@ -56,7 +64,11 @@
       "bytes": 1377991,
       "sha256": "49a51932787c6c657b7bb215fe973b1557896fda7635fe4dbaf237130f3dd4bc",
       "windDownStartSeconds": 54.754,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 21.75,
+        "end": 54.5
+      }
     },
     {
       "sirenId": "american-signal-t-128",
@@ -75,7 +87,11 @@
       "bytes": 583213,
       "sha256": "133631d45c081529ab403ebaae2ccd65986587ae9f1bc878102f0a95e49c6e3c",
       "windDownStartSeconds": 5.04,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 4.0,
+        "end": 4.75
+      }
     },
     {
       "sirenId": "federal-signal-2001-130",
@@ -94,7 +110,11 @@
       "bytes": 1415365,
       "sha256": "27baedd8f8db31e7bab4d718ca7e0aded38f49f45b4d7a82872cf4929eecbf15",
       "windDownStartSeconds": 59.009,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.25,
+        "end": 58.75
+      }
     },
     {
       "sirenId": "federal-signal-2001-130",
@@ -113,7 +133,11 @@
       "bytes": 595576,
       "sha256": "f0db578e4b9a3338cc981e49b8b94324a455541253d4ad6120cf0986d0891c3c",
       "windDownStartSeconds": 7.792,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 5.25,
+        "end": 7.5
+      }
     },
     {
       "sirenId": "federal-signal-model-5",
@@ -132,7 +156,11 @@
       "bytes": 1353181,
       "sha256": "a67def48743e3e8d0cb553f0cc39fd7d8a5b09f33309d8ec03f8fa67004e9b9e",
       "windDownStartSeconds": 59.847,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.0,
+        "end": 59.5
+      }
     },
     {
       "sirenId": "federal-signal-model-5",
@@ -151,7 +179,11 @@
       "bytes": 500319,
       "sha256": "26b92052071ee1553bcceb351a388b2cb129ebe743c061868d105650c5b42cc0",
       "windDownStartSeconds": 5.812,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 4.0,
+        "end": 5.5
+      }
     },
     {
       "sirenId": "federal-signal-model-7",
@@ -170,7 +202,11 @@
       "bytes": 1789807,
       "sha256": "fca6b6f246b056123cf4d9985b124762e26b62664a5a72eae4b4577b3920090f",
       "windDownStartSeconds": 57.959,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 21.5,
+        "end": 57.5
+      }
     },
     {
       "sirenId": "federal-signal-model-7",
@@ -189,7 +225,11 @@
       "bytes": 1009146,
       "sha256": "82a0717bbbdcb433d949bd9fd317fb69fed31c467ee1a5e61b5290ade7d6c241",
       "windDownStartSeconds": 8.706,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 5.0,
+        "end": 8.25
+      }
     },
     {
       "sirenId": "federal-signal-sth-10",
@@ -208,7 +248,11 @@
       "bytes": 2038819,
       "sha256": "2e08b3b1f1395747d909058e6bd4cac0807aabf1cf0be89b1f6deaa91cd34ba7",
       "windDownStartSeconds": 59.295,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.5,
+        "end": 59.0
+      }
     },
     {
       "sirenId": "federal-signal-sth-10",
@@ -227,7 +271,11 @@
       "bytes": 1446857,
       "sha256": "47d0aa867f545c1a92dc134cecaaf374871a78227b41947ea3f78c9ae137fb57",
       "windDownStartSeconds": 20.634,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 4.25,
+        "end": 8.25
+      }
     },
     {
       "sirenId": "federal-signal-stl-10",
@@ -246,7 +294,11 @@
       "bytes": 1466701,
       "sha256": "32ff5a9ba46fa54fa3b38e05e577fa3ce3b5b4ad0641a5e839622a1a912785eb",
       "windDownStartSeconds": 58.903,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.75,
+        "end": 58.5
+      }
     },
     {
       "sirenId": "federal-signal-stl-10",
@@ -265,7 +317,11 @@
       "bytes": 672702,
       "sha256": "51fd7677c2db2507c71987022f42bc7c3ab7197a3dd8e69edb0d11b0fa2e2737",
       "windDownStartSeconds": 8.767,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 2.192,
+        "end": 8.517
+      }
     },
     {
       "sirenId": "federal-signal-thunderbolt-1000t",
@@ -284,7 +340,11 @@
       "bytes": 1147729,
       "sha256": "9aaf9f3070d7c8561dcdb0c70f351889b679336d792b2c1748a7b2b829dd5fff",
       "windDownStartSeconds": 58.495,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.25,
+        "end": 58.0
+      }
     },
     {
       "sirenId": "federal-signal-thunderbolt-1000t",
@@ -303,7 +363,11 @@
       "bytes": 431973,
       "sha256": "d36104ebfb73e639702cb146fcdb769e487f080ee84b10fdca0d5f3bad63ec18",
       "windDownStartSeconds": 13.663,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 9.75,
+        "end": 13.25
+      }
     },
     {
       "sirenId": "sentry-10v",
@@ -322,7 +386,11 @@
       "bytes": 1666119,
       "sha256": "f26b5117e133d266abd6f07cd84cf11ad5dfa01c46f253e3f568487d23f8328a",
       "windDownStartSeconds": 59.986,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 20.75,
+        "end": 59.5
+      }
     },
     {
       "sirenId": "sentry-10v",
@@ -341,7 +409,11 @@
       "bytes": 799226,
       "sha256": "22bb74efd811b7d2e7a41ff754b8ab9e8c8c347c8cfc26ce346e59d267378782",
       "windDownStartSeconds": 5.576,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 2.75,
+        "end": 5.25
+      }
     },
     {
       "sirenId": "sentry-3v8-h",
@@ -360,7 +432,11 @@
       "bytes": 1353103,
       "sha256": "58ec5cf03ccd10f03fc42615f19c766eb2c7cb49a6a1e0dc15d470e805a50901",
       "windDownStartSeconds": 31.232,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 13.25,
+        "end": 30.75
+      }
     },
     {
       "sirenId": "sentry-3v8-h",
@@ -379,7 +455,11 @@
       "bytes": 586761,
       "sha256": "a5df9373c23186f3286aedda2e29d858279c0ff885f6d02b025998842d640f66",
       "windDownStartSeconds": 3,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 0.75,
+        "end": 2.75
+      }
     },
     {
       "sirenId": "whelen-wps-2900-series",
@@ -398,7 +478,11 @@
       "bytes": 1139356,
       "sha256": "dc116de1a01ba52638e7695f0f64ff5c9a4c1730122e82e2d81016cd082db0c0",
       "windDownStartSeconds": 64.437,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 23.25,
+        "end": 64.0
+      }
     },
     {
       "sirenId": "whelen-wps-2900-series",
@@ -417,7 +501,11 @@
       "bytes": 220605,
       "sha256": "2e6fb6f34a003fc108944dc352ad3281c9fcdd7c6902de6d29879f301de44a8e",
       "windDownStartSeconds": 7.105,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 4.0,
+        "end": 6.75
+      }
     },
     {
       "sirenId": "federal-signal-thunderbolt-1000",
@@ -435,7 +523,11 @@
       "bytes": 1907039,
       "sha256": "54480194c86c1cbdf711839dd9e02efd416d72ca74acc5c8b5ce6ef0044d994c",
       "windDownStartSeconds": 61.5,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 61.25
+      }
     },
     {
       "sirenId": "federal-signal-thunderbolt-1000t",
@@ -451,7 +543,11 @@
       "durationSeconds": 188.918,
       "notes": "Fast-wail recording, mapped to Fire / fast wail; does not claim the historic Thunderbolt 1003 hi-lo Fire pattern. Public HQ preview copied without editing.",
       "bytes": 4211816,
-      "sha256": "3bed1d3d68b6cef586a1e78e4aa9a52e4111be2d49e869aefffc820cd1da8b96"
+      "sha256": "3bed1d3d68b6cef586a1e78e4aa9a52e4111be2d49e869aefffc820cd1da8b96",
+      "sustainLoop": {
+        "start": 3.75,
+        "end": 176.5
+      }
     },
     {
       "sirenId": "american-signal-t-128",
@@ -467,7 +563,11 @@
       "durationSeconds": 70.107,
       "notes": "Outdoor Attack recording with a Federal Signal 2001 also audible; not an isolated T-128 recording. Public HQ preview copied without editing.",
       "bytes": 1577029,
-      "sha256": "61d7b7a449d10f341dbf5b4e1393c24b740ee50ec6e00943730902c753428a14"
+      "sha256": "61d7b7a449d10f341dbf5b4e1393c24b740ee50ec6e00943730902c753428a14",
+      "sustainLoop": {
+        "start": 5.75,
+        "end": 53.5
+      }
     },
     {
       "sirenId": "whelen-2000r",
@@ -486,7 +586,11 @@
       "bytes": 1168164,
       "sha256": "09942f7b4aad6c0a5fad2c27172fbb63d874c23003b4f7ab1a35f244aecbbd9f",
       "windDownStartSeconds": 62.119,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.0,
+        "end": 61.75
+      }
     },
     {
       "sirenId": "whelen-2000r",
@@ -505,7 +609,11 @@
       "bytes": 286272,
       "sha256": "e725b2692ab78b7ea6fd995c5475cb89c94e31d08d7589f5e9636bf76d27ef21",
       "windDownStartSeconds": 6.87,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 3.75,
+        "end": 6.5
+      }
     },
     {
       "sirenId": "federal-signal-model-2t",
@@ -524,7 +632,11 @@
       "bytes": 1304136,
       "sha256": "8add94da0121fb2957fcaa3e55f5895596a5ad6ae443fee3a0a7cbfccf4ddafb",
       "windDownStartSeconds": 58.401,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 15.25,
+        "end": 50.25
+      }
     },
     {
       "sirenId": "federal-signal-model-2t",
@@ -543,7 +655,11 @@
       "bytes": 396014,
       "sha256": "c7fe7f726f76761eb90e32187685c1017482e574b1edd87df033101586bacefd",
       "windDownStartSeconds": 3,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 2,
+        "end": 2.99
+      }
     },
     {
       "sirenId": "federal-signal-sd-10",
@@ -562,7 +678,11 @@
       "bytes": 1612565,
       "sha256": "c0e8503e2eb519772b291d7482f65271c4e62f78be71041135c859fc861f4d04",
       "windDownStartSeconds": 60.752,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 26.0,
+        "end": 60.5
+      }
     },
     {
       "sirenId": "federal-signal-sd-10",
@@ -581,7 +701,11 @@
       "bytes": 727920,
       "sha256": "c19c9b60fbec2ab115667924d44a2d3efd287896c5370ac27b300e0ecff98dfe",
       "windDownStartSeconds": 5.074,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 3.0,
+        "end": 4.75
+      }
     },
     {
       "sirenId": "darley-3v8",
@@ -600,7 +724,11 @@
       "bytes": 1396384,
       "sha256": "6682c2c4307e69266e54a0f57cc8de5596194d137784f838ca17a3b98c5c216b",
       "windDownStartSeconds": 61.13,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 24.25,
+        "end": 60.0
+      }
     },
     {
       "sirenId": "darley-3v8",
@@ -619,7 +747,11 @@
       "bytes": 1271704,
       "sha256": "9b7bb6ad1219c9d3ec533b274640c9444403eb09247143184fdc5bfa414b92f6",
       "windDownStartSeconds": 53.187,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 17.5,
+        "end": 42.25
+      }
     },
     {
       "sirenId": "sterling-m5",
@@ -638,7 +770,11 @@
       "bytes": 1443985,
       "sha256": "f161c743310467a2eeb71898e92355fbea6dda430dd4d6bc624365a5ace0cded",
       "windDownStartSeconds": 58.232,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 22.75,
+        "end": 57.75
+      }
     },
     {
       "sirenId": "sterling-m5",
@@ -657,7 +793,11 @@
       "bytes": 688062,
       "sha256": "f8b9ed7ddf74036713a38b8d9d7eaab2e998177526c0aa8317bb7c7fc986ce99",
       "windDownStartSeconds": 10.427,
-      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending."
+      "windDownStartBasis": "Approximate boundary from the corresponding shutdown duration; preserves a recording already in its ending.",
+      "sustainLoop": {
+        "start": 6.75,
+        "end": 10.0
+      }
     },
     {
       "sirenId": "whelen-wps-3016",
@@ -676,7 +816,11 @@
       "bytes": 4845799,
       "sha256": "a76c68c7d3e513987a7447d4471f3f689d403be5be51d120947ae64e94ef1483",
       "windDownStartSeconds": 182,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 181.75
+      }
     },
     {
       "sirenId": "federal-signal-modulator",
@@ -695,7 +839,11 @@
       "bytes": 4639426,
       "sha256": "a7d99de776e6b6d1edd37f47bfa271fdb91330043ee0619423ac6470a60c0f10",
       "windDownStartSeconds": 65.5,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 65.25
+      }
     },
     {
       "sirenId": "federal-signal-siratone-eows-612",
@@ -714,7 +862,11 @@
       "bytes": 1099104,
       "sha256": "e764fd08d3011600d4b94049b74fa93dbed5f2b4ca6834ffc378b8bb624b4bbe",
       "windDownStartSeconds": 32.5,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 32.25
+      }
     },
     {
       "sirenId": "h-rmann-hls-273",
@@ -733,7 +885,11 @@
       "bytes": 3485876,
       "sha256": "e312df9f0af5670d872bb7f964620ae65d114b5bc87c55454b1ebc25656081ef",
       "windDownStartSeconds": 118,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 117.75
+      }
     },
     {
       "sirenId": "h-rmann-hls-273",
@@ -752,7 +908,11 @@
       "bytes": 3341383,
       "sha256": "c93f02246a917720d3f1ee1c95c8e5a18ebfd506debb81569ece626acc82e550",
       "windDownStartSeconds": 121.8,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 121.55
+      }
     },
     {
       "sirenId": "whelen-wps-4004",
@@ -774,7 +934,11 @@
       "bytes": 2463337,
       "sha256": "319b8d3626e258d863a98acff6a8f34d6326a0120a7bc3209e26366a21cc435f",
       "windDownStartSeconds": 183.5,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 183.25
+      }
     },
     {
       "sirenId": "federal-signal-thunderbolt-1003",
@@ -796,7 +960,11 @@
       "bytes": 1056320,
       "sha256": "6c6ebce2492cb8069df8ec1905846665917e3406009ee3ef89638c10267b99f5",
       "windDownStartSeconds": 62,
-      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram."
+      "windDownStartBasis": "Foreground coast onset selected from the recording spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 61.75
+      }
     },
     {
       "sirenId": "gcs-model-3",
@@ -813,7 +981,11 @@
       "durationSeconds": 127.625,
       "notes": "Model label follows the collection’s filenames. Transcoded from the original WAV to 44.1 kHz AAC at 128 kbps; no pitch changes.",
       "bytes": 2081002,
-      "sha256": "67c5a0be15d3d21879f3a07aae69e53c101fb05cd3796c1559ebbcda3bc186e6"
+      "sha256": "67c5a0be15d3d21879f3a07aae69e53c101fb05cd3796c1559ebbcda3bc186e6",
+      "sustainLoop": {
+        "start": 23.25,
+        "end": 106.5
+      }
     },
     {
       "sirenId": "gcs-model-3",
@@ -830,7 +1002,11 @@
       "durationSeconds": 71.199,
       "notes": "Model label follows the collection’s filenames. Transcoded from the original WAV to 44.1 kHz AAC at 128 kbps; no pitch changes.",
       "bytes": 1164094,
-      "sha256": "dd73a2c182261e39db319d593c12af18420e0d917c9fc6d0c1a548816e33ff7d"
+      "sha256": "dd73a2c182261e39db319d593c12af18420e0d917c9fc6d0c1a548816e33ff7d",
+      "sustainLoop": {
+        "start": 18.25,
+        "end": 50.0
+      }
     },
     {
       "sirenId": "darley-screamer-8-port",
@@ -847,7 +1023,11 @@
       "durationSeconds": 73.745,
       "notes": "Recorder’s release post identifies an eight-port Darley Screamer; archive filenames use an ACA prefix. This naming discrepancy is retained here. Transcoded from the original WAV to 44.1 kHz AAC at 128 kbps; no pitch changes.",
       "bytes": 1182229,
-      "sha256": "bbee981614ed7b0f8903ff2a1fe0cea72156575dcce206932f4dbf31e223d6c6"
+      "sha256": "bbee981614ed7b0f8903ff2a1fe0cea72156575dcce206932f4dbf31e223d6c6",
+      "sustainLoop": {
+        "start": 23.75,
+        "end": 59.75
+      }
     },
     {
       "sirenId": "darley-screamer-8-port",
@@ -864,7 +1044,11 @@
       "durationSeconds": 21.425,
       "notes": "Recorder’s release post identifies an eight-port Darley Screamer; archive filenames use an ACA prefix. This naming discrepancy is retained here. Transcoded from the original WAV to 44.1 kHz AAC at 128 kbps; no pitch changes.",
       "bytes": 345221,
-      "sha256": "1021749d028a653ddfbe629e024bdc8d0ba51d974f6d1ba282d5020c33210ab4"
+      "sha256": "1021749d028a653ddfbe629e024bdc8d0ba51d974f6d1ba282d5020c33210ab4",
+      "sustainLoop": {
+        "start": 20.425,
+        "end": 21.415
+      }
     },
     {
       "sirenId": "whelen-wps-2900-series",
@@ -940,7 +1124,11 @@
       "sourceStartSeconds": 0,
       "sourceEndSeconds": 230,
       "windDownStartSeconds": 187,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 186.75
+      }
     },
     {
       "sirenId": "whelen-vortex",
@@ -965,7 +1153,11 @@
       "sourceStartSeconds": 9,
       "sourceEndSeconds": 54,
       "windDownStartSeconds": 37,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 36.75
+      }
     },
     {
       "sirenId": "whelen-wps-2905",
@@ -990,7 +1182,11 @@
       "sourceStartSeconds": 17,
       "sourceEndSeconds": 119,
       "windDownStartSeconds": 95,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 94.75
+      }
     },
     {
       "sirenId": "whelen-vortex",
@@ -1015,7 +1211,11 @@
       "sourceStartSeconds": 5,
       "sourceEndSeconds": 76,
       "windDownStartSeconds": 49,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 48.75
+      }
     },
     {
       "sirenId": "sentry-7v8",
@@ -1040,7 +1240,11 @@
       "sourceStartSeconds": 15,
       "sourceEndSeconds": 232,
       "windDownStartSeconds": 184,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 183.75
+      }
     },
     {
       "sirenId": "sentry-16v1t",
@@ -1065,7 +1269,11 @@
       "sourceStartSeconds": 7,
       "sourceEndSeconds": 111,
       "windDownStartSeconds": 70,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 69.75
+      }
     },
     {
       "sirenId": "federal-signal-model-2",
@@ -1090,7 +1298,11 @@
       "sourceStartSeconds": 7,
       "sourceEndSeconds": 207,
       "windDownStartSeconds": 179,
-      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate recorded shutdown boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 5,
+        "end": 178.75
+      }
     },
     {
       "author": "Siren Archives",
@@ -1114,7 +1326,11 @@
       "sha256": "f22365157e1367dd584e33719f8e0d781599195cf07d30a036e43974d47476cb",
       "notes": "User-supplied Siren Archives source, excerpt 283–583 seconds. Uploader-described synthesis. Transcoded to 44.1 kHz AAC without pitch/speed changes; original long ending retained. Shared with STH-10C.",
       "windDownStartSeconds": 41.25,
-      "windDownStartBasis": "Approximate final power-off boundary identified from source pitch analysis."
+      "windDownStartBasis": "Approximate final power-off boundary identified from source pitch analysis.",
+      "sustainLoop": {
+        "start": 4.25,
+        "end": 40.75
+      }
     },
     {
       "author": "Siren Archives",
@@ -1138,7 +1354,11 @@
       "sha256": "a4754f30aa500937594932d40f1565aac6936700ceb7f1637d52c8616e215b6a",
       "notes": "User-supplied source, excerpt 869–1145 seconds. Source title describes the audio as synthesis. Transcoded to 44.1 kHz AAC without pitch/speed changes; original long ending retained. Pulse assigned only to STH-10C.",
       "windDownStartSeconds": 17.5,
-      "windDownStartBasis": "Approximate final power-off boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate final power-off boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 4.25,
+        "end": 17.0
+      }
     },
     {
       "author": "Siren Archives",
@@ -1162,7 +1382,11 @@
       "sha256": "0bb17b48cb5a195ecef4bea429f19ac00f2758e8222297f98dc0368ae537c185",
       "notes": "User-supplied source, excerpt 583–868 seconds. Source title describes the audio as synthesis. Transcoded to 44.1 kHz AAC without pitch/speed changes; original long ending retained. Fire shared with STH-10C via the A/C signal mapping.",
       "windDownStartSeconds": 27.5,
-      "windDownStartBasis": "Approximate final power-off boundary inspected in the source spectrogram."
+      "windDownStartBasis": "Approximate final power-off boundary inspected in the source spectrogram.",
+      "sustainLoop": {
+        "start": 4.25,
+        "end": 26.5
+      }
     },
     {
       "sirenId": "federal-signal-sth-10b",
@@ -1185,7 +1409,11 @@
       "sha256": "5f48ff79c17dcf2a53d4542520e2155e45c83a05d090c0e732a5355ee8cbcbd0",
       "notes": "Fredericktown, Ohio STH-10B field recording. Original startup, full steady tone, and recorded shutdown; background noise and distant chimes remain. Transcoded to 44.1 kHz AAC without pitch/speed changes.",
       "windDownStartSeconds": 102.5,
-      "windDownStartBasis": "Approximate source power-off at 106 seconds, identified by pitch analysis."
+      "windDownStartBasis": "Approximate source power-off at 106 seconds, identified by pitch analysis.",
+      "sustainLoop": {
+        "start": 39.25,
+        "end": 102.0
+      }
     },
     {
       "sirenId": "federal-signal-sth-10b",
@@ -1208,7 +1436,11 @@
       "sha256": "5f48ff79c17dcf2a53d4542520e2155e45c83a05d090c0e732a5355ee8cbcbd0",
       "notes": "Fredericktown, Ohio STH-10B field recording. Original startup, full steady tone, and recorded shutdown; background noise and distant chimes remain. Transcoded to 44.1 kHz AAC without pitch/speed changes. Test tap uses Alert; held Test uses an authored full-pitch loop until release.",
       "windDownStartSeconds": 102.5,
-      "windDownStartBasis": "Approximate source power-off at 106 seconds, identified by pitch analysis."
+      "windDownStartBasis": "Approximate source power-off at 106 seconds, identified by pitch analysis.",
+      "sustainLoop": {
+        "start": 39.25,
+        "end": 102.0
+      }
     }
   ],
   "expandedDate": "2026-10-30",

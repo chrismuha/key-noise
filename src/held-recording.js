@@ -1,7 +1,7 @@
 // Actual recorded startup -> authored sustain loop -> actual recorded shutdown.
 // Playhead matching changes which part plays, never its pitch or playback rate.
 export function startHeldRecording(context, power, shutdown, {
-  loopStart, loopEnd, powerCurve = [], windDownCurve = [], initialSpeed = 0, destination = context.destination, onEnded
+  loopStart, loopEnd, powerCurve = [], windDownCurve = [], initialSpeed = 0, initialOffset = null, patterned = false, destination = context.destination, onEnded
 }) {
   let current;
   let phase = 'power';
@@ -31,7 +31,10 @@ export function startHeldRecording(context, power, shutdown, {
     }
     return curve.reduce((best, point) => Math.abs(point[1] - speed) < Math.abs(best[1] - speed) ? point : best, curve[0])[0];
   }
-  function playhead() { return current.offset + Math.max(0, context.currentTime - current.start); }
+  function playhead() {
+    const elapsed = current.offset + Math.max(0, context.currentTime - current.start);
+    return phase === 'power' && elapsed >= loopEnd ? loopStart + (elapsed - loopStart) % (loopEnd - loopStart) : elapsed;
+  }
   function dispose(voice) {
     voice.source.onended = null;
     try { voice.source.stop(); } catch { /* Already ended. */ }
@@ -64,7 +67,7 @@ export function startHeldRecording(context, power, shutdown, {
   function release() {
     if (closed || phase === 'coast') return;
     const elapsed = playhead();
-    const speed = elapsed >= loopStart ? 1 : valueAt(powerCurve, elapsed, elapsed / Math.max(.01, loopStart));
+    const speed = !patterned && elapsed >= loopStart ? 1 : valueAt(powerCurve, elapsed, Math.min(1, elapsed / Math.max(.01, loopStart)));
     phase = 'coast';
     const offset = speed >= .98 ? 0 : positionFor(windDownCurve, speed, (1 - speed) * shutdown.duration);
     play(shutdown, offset, false);
@@ -83,11 +86,11 @@ export function startHeldRecording(context, power, shutdown, {
     closed = true;
     for (const voice of [...voices]) dispose(voice);
   }
-  play(power, initialSpeed > 0 ? Math.min(loopStart, positionFor(powerCurve, initialSpeed, initialSpeed * loopStart)) : 0, true);
-  return { release, resume, stop, get phase() { return phase; }, get speed() {
+  play(power, initialOffset !== null ? Math.min(initialOffset, loopEnd - .01) : initialSpeed > 0 ? Math.min(loopStart, positionFor(powerCurve, initialSpeed, initialSpeed * loopStart)) : 0, true);
+  return { release, resume, stop, get position() { return playhead(); }, get phase() { return phase; }, get speed() {
     const elapsed = playhead();
     return phase === 'coast'
       ? valueAt(windDownCurve, elapsed, Math.max(0, 1 - elapsed / shutdown.duration))
-      : elapsed >= loopStart ? 1 : valueAt(powerCurve, elapsed, elapsed / Math.max(.01, loopStart));
+      : !patterned && elapsed >= loopStart ? 1 : valueAt(powerCurve, elapsed, Math.min(1, elapsed / Math.max(.01, loopStart)));
   } };
 }

@@ -56,20 +56,16 @@ and is not exhaustive.
 on; click different models to layer them, or uncheck it for one sound at a time.
 Buttons always say **Play sound** when idle and **Stop** while playing.
 
-Fake signal patterns:
+Siren signals keep running until stopped. Alert reaches full pitch and stays
+steady; Attack, Fire, and Pulse repeat their powered patterns. Startup plays once,
+and Stop/Cancel begins the wind-down. Changing cabinet signals preserves the
+current motor speed and crossfades the recordings. Holding Test powers the siren
+until release; a latched soundboard Test keeps running until stopped.
 
-| Mode | Powered pattern | Final coast | Complete cycle |
-| --- | --- | --- | --- |
-| Attack | 10 wind-ups: 3 seconds up, 5 seconds at full speed, 4-second partial coasts between rises | 60 seconds | 176 seconds |
-| Fire | 10 fast wails: 1.5 seconds up, 0.5 seconds at full speed, 1.5-second shallow dips | 60 seconds | 93.5 seconds |
-| Alert | One 4-second wind-up and a steady 180-second full-speed hold | 60 seconds | 244 seconds |
-| Pulse | Illustrative steady pitch, 1 second on / 1 second off for 180 seconds after wind-up | 60 seconds | 244 seconds |
-| Test (soundboard tap) | Short 0.8-second growl wind-up | 2.2 seconds | 3 seconds |
-
-Attack and Fire keep the rotor turning during intermediate dips. Alert stays at full speed throughout its steady hold. Fire bottoms
-out at 60% speed rather than repeatedly slowing nearly to a stop. Full wind-down
-only occurs at completion or Cancel. Loop repeats a complete signal sequence.
-These fixed cycles ignore the former short powered-time limit.
+Bundled Real signals use native-rate buffer loops within the powered section,
+excluding the recorded shutdown. Custom files without powered-loop metadata
+repeat their complete file. The Loop checkbox applies to Keyboard and Mouse;
+sirens run continuously without it.
 
 Volume is remembered across reloads. Zero mutes all real/fake sirens, including
 loops. The master output reaches exact silence after a brief click-prevention
@@ -214,39 +210,14 @@ and keyboard focus. Audio tests use controlled backends; listening on real
 hardware remains useful for evaluating how the simulations sound.
 
 Attack uses eight-second powered intervals and four-second intermediate coasts,
-with an illustrative 70% minimum rotor speed,
-then wind back up on the same rotor. Only the last coast reaches silence unless
-Cancel removes power earlier. Retaining ten wind-ups makes Attack 2 minutes
-56 seconds. Alert has one wind-up, a steady three-minute tone, and a final coast;
-it does not dip or repeat wind-ups during its hold. Fire and Test use their own
-existing timings.
+with an illustrative 70% minimum rotor speed. Fire uses faster, shallower dips.
+These patterns continue until stopped. Alert has one wind-up and holds full speed
+until stopped. Pulse repeats its on/off pattern until stopped.
 
-Starting another signal during a cycle or coast-down preserves the same
-oscillators and current pitch/volume. The rotor accelerates (or slows for a lower
-Test growl) before following the new signal pattern. The current cancelled mode
-continues its remaining sequence; a different mode begins its new sequence from
-the existing motor speed. Clicking a coasting soundboard model also reapplies
-power instead of leaving it stopped or creating another rotor.
-
-Turning **Loop sounds** off updates every active voice immediately and cancels
-any queued next-cycle starts. Each playing siren finishes its current complete
-pattern and coast-down once; it does not start another sequence. A single
-Attack/Fire pattern contains ten wind-ups; Alert contains one steady three-minute hold. Use Cancel
-or Stop all sirens to remove power before that pattern finishes. A physically
-held Test remains powered only while held, independently of Loop.
-
-Alert follows the common steady-signal convention described in
-[Federal Signal's siren manual](https://www.fedsig.com/sites/default/files/resource_library_document/IS_2_Rev713.pdf)
-and [Connecticut's emergency siren guide](https://portal.ct.gov/cfpc/-/media/demhs/_docs/plans-and-publications/ehsp0086--mps_media_guide.pdf).
-The simulator holds full speed for 180 seconds, in addition to its wind-up and
-coast-down. Cancel/resume, smooth mode transitions, and Loop still apply.
-
-Attack’s cadence follows the eight-second-on/four-second-off PGA example in
-[Federal Signal’s timer instructions](https://www.civildefensemuseum.com/sirens/manuals/ARandAFTimerManual.pdf).
-The ten-rise sequence ends with its full 60-second coast instead of the final
-four-second intermediate coast. This is an illustrative pitch profile, not a
-measured recording or a universal timing for every siren model. AR/AF controllers
-also support three-minute Attack signals; the app retains its requested ten rises.
+Starting another cabinet signal during playback or coast-down preserves the
+current speed. Recorded signals keep playing while their replacement loads,
+then crossfade over 150 ms. Stop/Cancel removes power and plays one shutdown;
+it never restarts the powered loop. A second Cancel stops immediately.
 
 Final fake-siren coasts now last 60 seconds from full speed for Attack, Fire, and
 Alert, including Cancel. Held Test keeps its first-second feathering response

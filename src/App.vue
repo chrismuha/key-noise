@@ -713,7 +713,7 @@ onBeforeUnmount(() => {
     <div class="soundboard-toolbar">
       <button class="collapse-header" type="button" :aria-expanded="!headerCollapsed" :aria-label="headerCollapsed ? 'Show header and controls' : 'Hide header and controls'" @click="toggleHeader">{{ headerCollapsed ? '▾ Show controls' : '▴ Hide controls' }}</button>
       <KeyNoiseHelp v-if="!headerCollapsed" @update:open="helpOpen = $event" />
-      <label class="loop-option"><input v-model="loopSounds" type="checkbox" /><span>Loop sounds</span></label>
+      <label v-if="activeTab !== 'sirens'" class="loop-option"><input v-model="loopSounds" type="checkbox" /><span>Loop sounds</span></label>
       <button v-if="activeTab !== 'sirens'" class="stop-siren" type="button" @click="stopAllAudio">Stop all sounds</button>
     </div>
     <nav class="tabs" aria-label="Input modes">
