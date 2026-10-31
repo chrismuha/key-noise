@@ -1,5 +1,33 @@
 # key-noise Change List
 
+## October 30, 2026 — Supplied STH-10 Pulse and Fire Audio
+
+- Import the supplied Siren Archives Pulse excerpt for C and Fire excerpt for
+  A/C, with matching original shutdown tails and full source metadata.
+- Retain the uploader’s synthesis description and mark reuse-license metadata
+  as unstated; update availability and source counts.
+
+## October 30, 2026 — STH-10 Variants
+
+- Identify the existing STH-10 as A and add separate B and C listings.
+- Share A’s Alert/Attack/Fire assets and simulations with C, with C-specific
+  file overrides. Keep B recording lookup separate.
+- Offer Pulse only on C within this family; retain A’s existing filenames.
+
+## October 30, 2026 — Pulse Mode
+
+- Add Pulse to the mode selector and simulator controls for Real and Fake sounds.
+- Simulate an illustrative pulsed steady tone with softened volume transitions.
+- Explain rare Real Pulse coverage; missing files keep the unavailable behavior.
+
+## October 30, 2026 — STH-10 Recorded Attack
+
+- Add SoundLiker13’s Creative Commons Sturgis, Kentucky Attack recording for
+  STH-10, including its matching recorded shutdown for release and Cancel.
+- Preserve attribution, original notice, excerpt boundaries, and hashes. The
+  recording includes two distant STH-10s and background noise.
+- Keep separate Fire / fast-wail unavailable until a reusable source is added.
+
 ## October 30, 2026 — Three-Sound Limit & Complete Guide Update
 
 - Limit Keyboard/Mouse playback to three concurrent sounds, including pending

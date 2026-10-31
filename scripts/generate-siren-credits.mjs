@@ -30,7 +30,8 @@ p{margin:.4em 0}small{overflow-wrap:anywhere}.scroll{overflow-x:auto}th{white-sp
 These are field recordings with their own durations, background noise, and recorded wind-downs. Held Real Test uses actual recorded startup, the author’s steady-loop markers, and recorded shutdown at unmodified playback rate; partial re-presses use approximate recorded-position matching.
 Release and Cancel use only the matching recorded shutdown at its original pitch and speed, or continue an ending already in progress. If no shutdown companion can play, the original recording finishes with looping disabled. Real playback never generates a substitute tone or applies artificial coast timing. A short gain crossfade joins recordings; early release and re-powering are limited by the fixed source recordings.</p>
 <p>Railroader3921 and selected Blixt1000 — Redi Wolf recordings have public-domain dedications, as identified per file.
-Additional YouTube recordings by Blixt1000 and Brandon Mendel (DSRX100) carry the uploader-selected Creative Commons Attribution reuse license; original notices and excerpt boundaries are retained below.
+Additional YouTube recordings by Blixt1000, SoundLiker13, and Brandon Mendel (DSRX100) carry the uploader-selected Creative Commons Attribution reuse license; original notices and excerpt boundaries are retained below.
+The user-supplied Siren Archives video provides Pulse and Fire excerpts; its title describes synthesis and its metadata states no reuse license. Source and processing details are retained below.
 Freesound recordings below use CC0 1.0, CC BY 3.0, or CC BY 4.0, as specified for each file.
 Required attribution includes the named recorder, recording source, license link, and processing notes.
 Credits apply to the audio files; no endorsement by the recorders or manufacturers is implied.</p>

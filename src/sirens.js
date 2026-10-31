@@ -1,7 +1,7 @@
 // Selected current and historical outdoor warning sirens; some real recordings are bundled.
 const families = [
   ['Whelen', 'Electronic', ['WPS-2900 series', 'WPS-2901', 'WPS-2902', 'WPS-2903', 'WPS-2904', 'WPS-2905', 'WPS-2906', 'WPS-2907', 'WPS-2908', 'WPS-2909', 'WPS-2910', 'WPS-3016', '2000R', 'WPS-4004', 'WPS-4008', 'Vortex', 'Hornet']],
-  ['Federal Signal', 'Mechanical', ['2001-130', '508-128', 'Eclipse8', 'Model 2', 'Model 2T', 'SD-10', 'Model 5', 'Model 7', 'STH-10', 'STL-10', 'Thunderbolt 1000', 'Thunderbolt 1000T', 'Thunderbolt 1003']],
+  ['Federal Signal', 'Mechanical', ['2001-130', '508-128', 'Eclipse8', 'Model 2', 'Model 2T', 'SD-10', 'Model 5', 'Model 7', 'STH-10A', 'STH-10B', 'STH-10C', 'STL-10', 'Thunderbolt 1000', 'Thunderbolt 1000T', 'Thunderbolt 1003']],
   ['Federal Signal', 'Electronic', ['Modulator', 'DSA', 'SiraTone EOWS 612', 'SiraTone EOWS 1212']],
   ['American Signal', 'Mechanical', ['T-128', 'T-135', 'T-180']],
   ['American Signal', 'Electronic', ['i-Force', 'E-Class']],
@@ -16,11 +16,21 @@ const families = [
 export const sirens = families.flatMap(([manufacturer, type, models]) => models.map((model) => ({
   id: `${manufacturer}-${model}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
   manufacturer, model, type,
+  // Retain A's existing asset IDs and user-installed filenames.
+  ...(model === 'STH-10A' ? { id: 'federal-signal-sth-10', unsupportedModes: ['pulse'] } : {}),
+  ...(model === 'STH-10B' ? { unsupportedModes: ['pulse'] } : {}),
+  ...(model === 'STH-10C' ? {
+    sharedRecordingId: 'federal-signal-sth-10', sharedModes: ['alert', 'attack', 'fire'],
+    synthesisId: 'federal-signal-sth-10',
+    recordingNote: 'Alert, Attack, Fire shared with STH-10A · Pulse capable'
+  } : {}),
   ...(model === 'WPS-2900 series' ? { recordingNote: '560 Hz series sample · speaker configuration unspecified' } : {})
 })));
 export const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
 export function soundSources(siren, mode) {
-  const names = mode ? [`${siren.id}-${mode}`, ...(mode === 'attack' ? [siren.id] : [])] : [siren.id];
+  if (siren.unsupportedModes?.includes(mode)) return [];
+  const ids = [siren.id, ...(siren.sharedModes?.includes(mode) ? [siren.sharedRecordingId] : [])];
+  const names = ids.flatMap(id => mode ? [`${id}-${mode}`, ...(mode === 'attack' ? [id] : [])] : [id]);
   return names.flatMap(name => audioExtensions.map(extension => ({
     fileName: `${name}.${extension}`,
     url: `./sounds/sirens/${name}.${extension}`
@@ -37,10 +47,12 @@ export async function findSound(siren, mode) {
   return null;
 }
 
-// Shutdown recordings are separate from the four playable signal modes.
+// Shutdown recordings are separate from the playable signal modes.
 // Mode-specific tails take precedence (for example, German Warning vs All-clear).
 export async function findWindDown(siren, mode) {
-  for (const name of [`${siren.id}-${mode}-winddown`, `${siren.id}-winddown`]) {
+  if (siren.unsupportedModes?.includes(mode)) return null;
+  const ids = [siren.id, ...(siren.sharedModes?.includes(mode) ? [siren.sharedRecordingId] : [])];
+  for (const name of ids.flatMap(id => [`${id}-${mode}-winddown`, `${id}-winddown`])) {
     for (const extension of audioExtensions) {
       const source = { fileName: `${name}.${extension}`, url: `./sounds/sirens/${name}.${extension}` };
       try {

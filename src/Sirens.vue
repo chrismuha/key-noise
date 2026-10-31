@@ -19,12 +19,13 @@ function savedSoundMode() {
 const soundMode = ref(savedSoundMode());
 const allowMultiple = ref(true);
 const sirenMode = ref('attack');
-const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', test: 'Test / Growl', chime: 'Chime', airhorn: 'Air horn' };
+const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', pulse: 'Pulse', test: 'Test / Growl', chime: 'Chime', airhorn: 'Air horn' };
 const recordedModes = ref({});
 const modeDescriptions = {
   attack: 'Ten continuous wails with shallow, gradual pitch dips; fully coasts down only at the end.',
   alert: 'One wind-up, a steady three-minute tone, then a gradual full coast-down.',
   fire: 'Fire: ten fast wails with shallow dips, followed by one final coast-down.',
+  pulse: 'Illustrative pulsed steady tone: one second on, one second off for three minutes, then a final coast-down.',
   test: 'A low growl with a short wind-up and a complete coast-down.'
 };
 function expectedFile(siren) { return `${siren.id}-${sirenMode.value}.mp3`; }
@@ -56,7 +57,7 @@ const filtered = computed(() => sirens.filter((siren) =>
   `${siren.manufacturer} ${siren.model} ${siren.type}`.toLowerCase().includes(search.value.trim().toLowerCase())
 ));
 const readinessText = computed(() => simulated.value
-  ? `${sirens.length} fake sounds ready`
+  ? `${sirens.filter(siren => !siren.unsupportedModes?.includes(sirenMode.value)).length} fake sounds ready`
   : available.value.size
     ? `${available.value.size} sound${available.value.size === 1 ? '' : 's'} ready`
     : `Add files named ${expectedFile(sirens[0])} and onward in public/sounds/sirens`);
@@ -249,6 +250,7 @@ async function simulatorCommand(mode, { held = false } = {}) {
   const request = ++simulatorCommandRequest;
   const siren = simulatorSiren.value;
   if (!siren) return;
+  if (siren.unsupportedModes?.includes(mode)) { status.value = `Pulse requires STH-10C.`; return; }
   const session = sessions.get(siren.id);
   if (!held && session?.simulation && session.mode !== mode && session.simulation.transitionSignal(mode)) {
     session.mode = mode;
@@ -345,6 +347,10 @@ async function scan() {
   scanning.value = false;
 }
 async function play(siren, { held = false } = {}) {
+  if (siren.unsupportedModes?.includes(sirenMode.value)) {
+    status.value = `Pulse is available on STH-10C, not ${siren.model}.`;
+    return;
+  }
   const previous = sessions.get(siren.id);
   if (previous && previous.stopping && previous.mode !== sirenMode.value) finish(siren.id, previous);
   else if (previous) {
@@ -494,6 +500,11 @@ onMounted(() => {
       modes[recording.sirenId] ||= [];
       if (!modes[recording.sirenId].includes(recording.mode)) modes[recording.sirenId].push(recording.mode);
     }
+    for (const siren of sirens) {
+      if (siren.sharedRecordingId) {
+        modes[siren.id] = [...new Set([...(modes[siren.id] || []), ...(modes[siren.sharedRecordingId] || []).filter(mode => siren.sharedModes.includes(mode))])];
+      }
+    }
     recordedModes.value = modes;
   });
   mobileMedia = window.matchMedia('(max-width: 760px)');
@@ -520,7 +531,7 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
     </div>
     <div class="siren-board">
     <div class="siren-quick-controls">
-      <label class="settings-field"><span>Siren mode</span><select v-model="sirenMode"><option value="attack">Attack</option><option value="alert">Alert</option><option value="fire">Fire</option><option value="test">Test / Growl</option><option v-if="!simulated" value="chime">Chime</option><option v-if="!simulated" value="airhorn">Air horn</option></select></label>
+      <label class="settings-field"><span>Siren mode</span><select v-model="sirenMode"><option value="attack">Attack</option><option value="alert">Alert</option><option value="fire">Fire</option><option value="pulse">Pulse</option><option value="test">Test / Growl</option><option v-if="!simulated" value="chime">Chime</option><option v-if="!simulated" value="airhorn">Air horn</option></select></label>
       <label class="settings-field"><span>Sound source</span><select v-model="soundMode"><option value="fake">Fake sounds</option><option value="real">Real sounds</option></select></label>
       <label class="settings-field"><span>Manufacturer</span><select v-model="manufacturer"><option>All manufacturers</option><option v-for="make in manufacturers" :key="make">{{ make }}</option></select></label>
       <label class="multi-sound-option"><input v-model="allowMultiple" type="checkbox" /><span>Play multiple sounds</span></label>
@@ -529,8 +540,8 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
     <p class="siren-mode-description">{{ simulated ? modeDescriptions[sirenMode] : 'Real recordings play their recorded signal and wind-down. Availability depends on the selected mode.' }}</p>
     <p class="siren-status" role="status">{{ playbackText }}</p>
     <div class="siren-grid">
-      <button v-for="siren in visibleSirens" :key="siren.id" type="button" class="key siren-key" data-sound-button :class="{ loaded: sounding.has(siren.id), missing: !simulated && !available.has(siren.id) && !sounding.has(siren.id) }" :aria-pressed="playing.has(siren.id)" :aria-label="`${playing.has(siren.id) ? 'Stop' : 'Play'} ${siren.manufacturer} ${siren.model}`" @pointerdown="holdGesture.start($event, siren)" @pointermove="holdGesture.move($event)" @pointerup="holdGesture.cancel()" @pointercancel="holdGesture.cancel()" @pointerleave="holdGesture.cancel()" @contextmenu.prevent="openSimulator(siren)" @keydown.f2.prevent="openSimulator(siren)" @click="holdGesture.tap(siren)">
-        <small>{{ siren.manufacturer }}</small><span>{{ siren.model }}</span><small>{{ siren.type }}</small><small v-if="siren.recordingNote">{{ siren.recordingNote }}</small><small v-if="!simulated && recordedModes[siren.id]?.length">Available: {{ recordedModes[siren.id].map(mode => modeLabels[mode]).join(' · ') }}</small><small class="siren-filename">{{ expectedFile(siren) }}</small><strong>{{ windingDown.has(siren.id) ? '■ Stopped · winding down' : playing.has(siren.id) ? '■ Stop' : '▶ Play sound' }}</strong><small class="simulator-hint">Hold for simulator · F2</small>
+      <button v-for="siren in visibleSirens" :key="siren.id" type="button" class="key siren-key" data-sound-button :class="{ loaded: sounding.has(siren.id), missing: (siren.unsupportedModes?.includes(sirenMode) || !simulated && !available.has(siren.id)) && !sounding.has(siren.id) }" :aria-pressed="playing.has(siren.id)" :aria-label="`${playing.has(siren.id) ? 'Stop' : 'Play'} ${siren.manufacturer} ${siren.model}`" @pointerdown="holdGesture.start($event, siren)" @pointermove="holdGesture.move($event)" @pointerup="holdGesture.cancel()" @pointercancel="holdGesture.cancel()" @pointerleave="holdGesture.cancel()" @contextmenu.prevent="openSimulator(siren)" @keydown.f2.prevent="openSimulator(siren)" @click="holdGesture.tap(siren)">
+        <small>{{ siren.manufacturer }}</small><span>{{ siren.model }}</span><small>{{ siren.type }}</small><small v-if="siren.recordingNote">{{ siren.recordingNote }}</small><small v-if="!simulated && recordedModes[siren.id]?.length">Available: {{ recordedModes[siren.id].map(mode => modeLabels[mode]).join(' · ') }}</small><small class="siren-filename">{{ siren.unsupportedModes?.includes(sirenMode) ? 'Pulse requires STH-10C' : expectedFile(siren) }}</small><strong>{{ windingDown.has(siren.id) ? '■ Stopped · winding down' : playing.has(siren.id) ? '■ Stop' : '▶ Play sound' }}</strong><small class="simulator-hint">Hold for simulator · F2</small>
       </button>
     </div>
     <nav class="board-pagination mobile-only" aria-label="Siren sound pages">
@@ -541,6 +552,6 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
     <button class="stop-siren mobile-only mobile-stop-all" type="button" :disabled="!playing.size" @click="stopButton">{{ windingDown.size ? 'Stop winding down' : 'Stop all sirens' }}</button>
     <p v-if="!filtered.length" class="siren-note">No models match. Try another manufacturer or clear the search.</p>
     </div>
-    <p class="siren-note mobile-settings-content">Includes 56 real recordings for 32 catalog entries; most support Alert and Test / Growl. <a href="./sounds/sirens/CREDITS.html" target="_blank" rel="noopener">Recording credits and available modes</a>. Add files to <code>public/sounds/sirens/</code> using the mode-specific filenames shown on the buttons (for example, model-attack.mp3 or model-test.mp3). Attack mode also accepts the original model.mp3 filename. MP3, WAV, OGG, and M4A are supported. This catalog covers selected current and historical models; it is not an exhaustive list.</p>
+    <p class="siren-note mobile-settings-content">Includes 59 audio recordings for 33 catalog entries; most support Alert and Test / Growl. Pulse is a rare signal; STH-10C includes a Pulse excerpt from the supplied video. <a href="./sounds/sirens/CREDITS.html" target="_blank" rel="noopener">Recording credits and available modes</a>. Add files to <code>public/sounds/sirens/</code> using the mode-specific filenames shown on the buttons (for example, model-attack.mp3, model-pulse.mp3, or model-test.mp3). Attack mode also accepts the original model.mp3 filename. MP3, WAV, OGG, and M4A are supported. This catalog covers selected current and historical models; it is not an exhaustive list.</p>
   </section>
 </template>

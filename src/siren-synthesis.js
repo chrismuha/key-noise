@@ -5,7 +5,7 @@ function coastCurve(progress) {
   return (1 - phase) ** 2 * (1 + 2 * phase);
 }
 export function sirenCycle(mode, duration) {
-  if (mode === 'alert') return { windUp: 4, powered: 180, windDown: 60, peak: 1, trough: 1 };
+  if (['alert', 'pulse'].includes(mode)) return { windUp: 4, powered: 180, windDown: 60, peak: 1, trough: 1 };
   if (['attack', 'fire'].includes(mode)) {
     const windUp = mode === 'fire' ? 1.5 : 3;
     // Federal PGA reference cadence: 8 seconds powered, 4 seconds coasting.
@@ -23,7 +23,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
   let cycle = held ? { windUp: 3, powered: Infinity, windDown: 4, peak: 1 } : sirenCycle(mode, duration);
   let powerOff = cycle.windUp + cycle.powered;
   let length = powerOff + cycle.windDown;
-  const seed = [...siren.id].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
+  const seed = [...(siren.synthesisId || siren.id)].reduce((sum, letter) => sum + letter.charCodeAt(0), 0);
   const frequency = 400 + seed % 180;
   const output = context.createGain();
   const envelope = context.createGain();
@@ -73,7 +73,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
     oscillator.connect(filter);
     return { oscillator, ratio };
   });
-  function scheduleSpeed(at, seconds, speed, landmarks = []) {
+  function scheduleSpeed(at, seconds, speed, landmarks = [], pulseWindow = null) {
     const steps = Math.ceil(seconds / 0.04);
     const times = new Set(landmarks);
     for (let i = 0; i <= steps; i++) times.add(seconds * i / steps);
@@ -84,7 +84,13 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
         oscillator.frequency.linearRampToValueAtTime(Math.max(20, frequency * ratio * value), time);
       }
       // Motor volume follows speed, reaching silence only after the rotor coasts down.
-      envelope.gain.linearRampToValueAtTime(0.5 * Math.pow(value, 0.8), time);
+      let amplitude = 1;
+      if (pulseWindow && t >= pulseWindow.start && t < pulseWindow.end) {
+        // Illustrative pulsed steady: fixed pitch, 1s on / 1s off, softened edges.
+        const phase = (t - pulseWindow.start) % 2;
+        amplitude = Math.max(0, Math.min(1, phase / 0.04, (1 - phase) / 0.04));
+      }
+      envelope.gain.linearRampToValueAtTime(0.5 * Math.pow(value, 0.8) * amplitude, time);
     }
   }
   envelope.gain.setValueAtTime(0, start);
@@ -94,7 +100,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
       return [at, at + cycle.windUp, Math.min(powerOff, at + cycle.windUp + cycle.peakHold)];
     }).flat()
     : [];
-  scheduleSpeed(start, held ? cycle.windUp : length, speedAt, landmarks);
+  scheduleSpeed(start, held ? cycle.windUp : length, speedAt, landmarks, mode === 'pulse' && !held ? { start: cycle.windUp, end: powerOff } : null);
   oscillators.forEach(({ oscillator }) => oscillator.start(start));
   let stopped = false;
   let manualPower = held;
@@ -179,7 +185,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
     signalPositionAt = time => time < now + recovery ? position : resumePosition + time - now - recovery;
     pausedSignalPosition = null;
     motionAt = time => ramp(Math.max(0, time - now));
-    scheduleSpeed(now, remaining, ramp, [recovery, ...landmarks.filter(t => t > resumePosition).map(t => t - resumePosition + recovery)]);
+    scheduleSpeed(now, remaining, ramp, [recovery, ...landmarks.filter(t => t > resumePosition).map(t => t - resumePosition + recovery)], mode === 'pulse' ? { start: recovery, end: remaining - cycle.windDown } : null);
     retireAt(now + remaining + 0.02);
     return true;
   }
@@ -213,7 +219,7 @@ export function startSimulatedSiren(context, siren, { duration, volume, onEnded,
       ? cycle.windUp * Math.max(0, time - now) / recovery : cycle.windUp + time - now - recovery;
     const remaining = recovery + length - cycle.windUp;
     scheduleSpeed(now, held ? recovery : remaining, ramp,
-      held ? [] : [recovery, ...landmarks.filter(t => t > cycle.windUp).map(t => t - cycle.windUp + recovery)]);
+      held ? [] : [recovery, ...landmarks.filter(t => t > cycle.windUp).map(t => t - cycle.windUp + recovery)], mode === 'pulse' && !held ? { start: recovery, end: remaining - cycle.windDown } : null);
     if (held) scheduledEnd = Infinity;
     else retireAt(now + remaining + 0.02);
     return true;

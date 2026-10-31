@@ -234,7 +234,7 @@ test('mode-specific recordings do not fall back to the wrong tone', async () => 
   const siren = sirens[0];
   assert.equal(soundSources(siren, 'attack')[0].fileName, `${siren.id}-attack.mp3`);
   assert.ok(soundSources(siren, 'attack').some(source => source.fileName === `${siren.id}.mp3`));
-  for (const mode of ['alert', 'fire', 'test']) {
+  for (const mode of ['alert', 'fire', 'pulse', 'test']) {
     assert.equal(soundSources(siren, mode).length, 4);
     assert.ok(soundSources(siren, mode).every(source => source.fileName.startsWith(`${siren.id}-${mode}.`)));
   }
@@ -835,8 +835,8 @@ test('bundled real recordings match catalog modes, provenance, and intact audio 
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
   const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
-  assert.equal(recordings.length, 56);
-  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 32);
+  assert.equal(recordings.length, 59);
+  assert.equal(new Set(recordings.map(r => r.sirenId)).size, 33);
   assert.equal(new Set(recordings.map(r => `${r.sirenId}:${r.mode}`)).size, recordings.length);
   for (const recording of recordings) {
     const siren = sirens.find(s => s.id === recording.sirenId);
@@ -946,8 +946,8 @@ test('every bundled model has an attributed, intact shutdown file and mode-speci
   const base = new URL('../public/sounds/sirens/', import.meta.url);
   const { recordings, windDowns } = JSON.parse(await readFile(new URL('recordings.json', base), 'utf8'));
   const credits = await readFile(new URL('CREDITS.html', base), 'utf8');
-  assert.equal(windDowns.length, 33);
-  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 31);
+  assert.equal(windDowns.length, 36);
+  assert.equal(new Set(windDowns.map(tail => tail.sirenId)).size, 32);
   for (const tail of windDowns) {
     const data = await readFile(new URL(tail.fileName, base));
     assert.equal(createHash('sha256').update(data).digest('hex'), tail.sha256);
@@ -965,6 +965,8 @@ test('every bundled model has an attributed, intact shutdown file and mode-speci
     for (const recording of recordings.filter(recording => !['chime', 'airhorn'].includes(recording.mode))) {
       assert.ok(await findWindDown(sirens.find(siren => siren.id === recording.sirenId), recording.mode), recording.fileName);
     }
+    const sth10 = sirens.find(siren => siren.id === 'federal-signal-sth-10');
+    assert.equal((await findWindDown(sth10, 'attack')).fileName, 'federal-signal-sth-10-attack-winddown.m4a');
     const hormann = sirens.find(siren => siren.id === 'h-rmann-hls-273');
     assert.equal((await findWindDown(hormann, 'attack')).fileName, 'h-rmann-hls-273-attack-winddown.m4a');
     assert.equal((await findWindDown(hormann, 'alert')).fileName, 'h-rmann-hls-273-alert-winddown.m4a');
@@ -1036,7 +1038,7 @@ test('Dropbox audit accounts for source files and exposes STH-10 playback and lo
     for (const name of file.includedAs) assert.ok((await stat(new URL(name, base))).isFile());
   }
   const sth10 = recordings.filter(recording => recording.sirenId === 'federal-signal-sth-10');
-  assert.deepEqual(sth10.map(recording => recording.mode).sort(), ['alert', 'test']);
+  assert.deepEqual(sth10.map(recording => recording.mode).sort(), ['alert', 'attack', 'fire', 'test']);
   assert.match(inventory.files.find(file => file.originalFile === 'federalsignal_sth10_startloop.wav').disposition, /hold-to-run/);
   assert.ok(recordings.some(recording => recording.sirenId === 'american-signal-e-class' && recording.mode === 'chime'));
   assert.ok(recordings.some(recording => recording.sirenId === 'whelen-wps-4004' && recording.mode === 'airhorn'));
@@ -1284,4 +1286,64 @@ test('only three held inputs can start, including pending voices, and release fr
   pending[0](); await Promise.resolve();
   assert.equal(voices.at(-1).sound.number, 4);
   controller.cancelAll();
+});
+
+
+test('Pulse changes volume at steady pitch and Cancel ends with a continuous coast', () => {
+  const gains = [], oscillators = [];
+  const parameter = () => ({ points: [], setValueAtTime() {}, cancelScheduledValues() {}, cancelAndHoldAtTime() {}, linearRampToValueAtTime(value, time) { this.points.push([value, time]); } });
+  const node = () => ({ gain: parameter(), frequency: parameter(), connect() {}, disconnect() {}, start() {}, stop() {} });
+  const context = { currentTime: 0, destination: {}, createGain() { const n = node(); gains.push(n); return n; }, createBiquadFilter: node, createOscillator() { const n = node(); oscillators.push(n); return n; } };
+  const player = startSimulatedSiren(context, sirens[0], { mode: 'pulse', volume: 1, onEnded() {} });
+  const steady = oscillators[0].frequency.points.filter(([, t]) => t > 5 && t < 180);
+  assert.equal(new Set(steady.map(([value]) => value)).size, 1, 'Pulse does not wail');
+  const levels = gains[1].gain.points.filter(([, t]) => t > 5 && t < 10).map(([value]) => value);
+  assert.ok(levels.includes(0) && levels.includes(0.5), 'steady tone pulses between silence and full level');
+  assert.equal(player.scheduledEnd, 244.02);
+  context.currentTime = 10;
+  const before = gains[1].gain.points.length;
+  player.stop();
+  const coast = gains[1].gain.points.slice(before).map(([value]) => value);
+  assert.ok(coast.slice(0, -1).every(value => value > 0), 'Cancel has no more pulsed gaps');
+  assert.equal(coast.at(-1), 0);
+});
+
+test('Real Pulse with no file stays unavailable and never starts fake audio', async () => {
+  const { board, previews, recordings, nextTick, sandbox } = await soundboard();
+  sandbox.findSound = async () => null;
+  board.soundMode.value = 'real'; await nextTick();
+  board.sirenMode.value = 'pulse'; await nextTick();
+  await board.play(sirens[0]);
+  assert.equal(previews.length, 0);
+  assert.equal(recordings.length, 0);
+});
+
+
+test('STH-10 variants isolate B and Pulse while C shares only A standard signals', async () => {
+  const a = sirens.find(s => s.model === 'STH-10A');
+  const b = sirens.find(s => s.model === 'STH-10B');
+  const c = sirens.find(s => s.model === 'STH-10C');
+  assert.ok(a && b && c);
+  assert.equal(a.id, 'federal-signal-sth-10');
+  for (const mode of ['alert', 'attack', 'fire']) {
+    assert.ok(soundSources(c, mode).some(source => source.fileName === `${a.id}-${mode}.m4a`));
+    assert.ok(soundSources(b, mode).every(source => !source.fileName.startsWith(`${a.id}-`)));
+  }
+  assert.deepEqual(soundSources(a, 'pulse'), []);
+  assert.deepEqual(soundSources(b, 'pulse'), []);
+  assert.ok(soundSources(c, 'pulse').every(source => source.fileName.startsWith(`${c.id}-pulse.`)));
+  assert.ok(soundSources(c, 'test').every(source => source.fileName.startsWith(`${c.id}-test.`)));
+  assert.equal(c.synthesisId, a.id);
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async url => ({ ok: url.endsWith('federal-signal-sth-10-attack-winddown.m4a'), headers: new Headers({ 'content-type': 'audio/mp4' }) });
+    assert.equal((await findWindDown(c, 'attack')).fileName, 'federal-signal-sth-10-attack-winddown.m4a');
+    assert.equal(await findWindDown(b, 'attack'), null);
+  } finally { globalThis.fetch = original; }
+  const { board, previews, nextTick } = await soundboard();
+  board.sirenMode.value = 'pulse'; await nextTick();
+  await board.play(a); await board.play(b);
+  assert.equal(previews.length, 0);
+  await board.play(c);
+  assert.equal(previews.length, 1);
 });

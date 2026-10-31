@@ -63,6 +63,7 @@ Fake signal patterns:
 | Attack | 10 wind-ups: 3 seconds up, 5 seconds at full speed, 4-second partial coasts between rises | 60 seconds | 176 seconds |
 | Fire | 10 fast wails: 1.5 seconds up, 0.5 seconds at full speed, 1.5-second shallow dips | 60 seconds | 93.5 seconds |
 | Alert | One 4-second wind-up and a steady 180-second full-speed hold | 60 seconds | 244 seconds |
+| Pulse | Illustrative steady pitch, 1 second on / 1 second off for 180 seconds after wind-up | 60 seconds | 244 seconds |
 | Test (soundboard tap) | Short 0.8-second growl wind-up | 2.2 seconds | 3 seconds |
 
 Attack and Fire keep the rotor turning during intermediate dips. Alert stays at full speed throughout its steady hold. Fire bottoms
@@ -74,16 +75,17 @@ Volume is remembered across reloads. Zero mutes all real/fake sirens, including
 loops. The master output reaches exact silence after a brief click-prevention
 ramp. Fake waveform starts/stops are smoothed; there are no activation sounds.
 
-Real sounds now includes 56 licensed field recordings across 32 catalog entries.
+Real sounds now includes 59 audio recordings across 33 catalog entries.
 Select **Real sounds**, then **Alert** or **Test / Growl** for the widest coverage.
-T-128 and Hörmann HLS 273 also have Attack recordings; Thunderbolt 1000T has
+T-128, STH-10, and Hörmann HLS 273 also have Attack recordings; Thunderbolt 1000T has
 a Fire / fast-wail recording. Missing combinations retain the add-files message.
 
 | Included model | Recorded modes |
 | --- | --- |
 | ACA Allertor 125 | Alert, Test |
 | American Signal T-128 | Alert, Test, Attack (another siren is audible) |
-| Federal Signal 2001-130, Model 5, Model 7, STH-10, STL-10 | Alert, Test |
+| Federal Signal 2001-130, Model 5, Model 7, STL-10 | Alert, Test |
+| Federal Signal STH-10A | Alert, Test, Attack (two distant sirens; Sturgis, KY) |
 | Federal Signal Thunderbolt 1000 | Alert |
 | Federal Signal Thunderbolt 1000T | Alert, Test, Fire / fast wail |
 | Federal Signal Thunderbolt 1003 | Alert (YouTube field recording) |
@@ -114,7 +116,7 @@ The main collection was dedicated to the public domain by Railroader3921:
 [source and dedication](https://www.airraidsirens.net/forums/viewtopic.php?p=207616).
 Additional recordings use public Freesound HQ previews: CC0 by mordeby,
 guitarguy1985, and 2887679652; CC BY 3.0 by SoundMaster391 and mmcdona1; and
-CC BY 4.0 by dcf77. YouTube additions by Blixt1000 and Brandon Mendel
+CC BY 4.0 by dcf77. YouTube additions by Blixt1000, SoundLiker13, and Brandon Mendel
 (DSRX100) use the uploader-selected Creative Commons Attribution license;
 original titles, source links, copyright notices, and excerpt boundaries are
 retained in the manifest and credits. Required credits and license links are bundled with the app.
@@ -260,7 +262,7 @@ A short gain crossfade joins the original signal and recorded shutdown; an
 early release can still differ from a physical siren because these are fixed
 recordings. Resuming a signal returns to its paused original file.
 
-The 33 recorded shutdown companions are the primary shutdown audio. Add
+The 36 recorded shutdown companions are the primary shutdown audio. Add
 `<model-id>-winddown.mp3` (or WAV, OGG, M4A), or
 `<model-id>-<mode>-winddown.*` for a mode-specific shutdown. Second Stop,
 source changes, and closing the cabinet dispose of both recorded audio paths.
@@ -355,3 +357,29 @@ and hiding the page cancel held inputs and pending audio starts.
 The in-app **Help → Controls & tips** is the user guide. It covers current
 hold/release behavior, the three-sound limit, safe stopping, Space handling,
 full-screen Help navigation, release history, toolbar buttons, and Contact Us.
+
+STH-10 Attack uses [SoundLiker13’s Sturgis recording](https://www.youtube.com/watch?v=PgxAVz-qr54),
+with the uploader-selected YouTube Creative Commons Attribution license. The
+14–215 second excerpt includes two distant STH-10s and background noise; Cancel
+uses its own final shutdown (190–215 seconds). The uploader’s original notice
+is retained in the manifest and credits. STH-10A/C Fire is also bundled from the supplied Siren Archives video.
+
+Pulse is available in the mode selector and simulator. Fake Pulse uses an
+illustrative pulsed steady pattern, not a manufacturer-specific cadence. Real
+Pulse is rare; STH-10C includes a supplied-video excerpt. Matching files use
+`model-pulse.mp3` (or WAV, OGG, M4A), with optional `model-pulse-winddown.m4a`.
+Missing Pulse recordings show the normal unavailable message.
+
+STH-10 variants have separate catalog listings: the existing entry is STH-10A
+(its filenames retain `federal-signal-sth-10` for compatibility). STH-10B has
+its own files. STH-10C shares A’s Alert, Attack, and Fire recordings and simulated
+patterns; C-specific files take priority. Within this family, only C offers Pulse.
+No B recordings are bundled. C Pulse is included; custom replacements use
+`federal-signal-sth-10c-pulse.mp3` (WAV, OGG, M4A also supported).
+
+The supplied [Siren Archives video](https://www.youtube.com/watch?v=uly8yG2oBCs)
+provides STH-10C Pulse (14:29–19:05) and STH-10A/C Fire (9:43–14:28),
+with matching shutdown companions and the original long endings. The uploader
+titles this source “All signals synth”; this description is retained in the
+manifest. No reuse license is stated in its metadata, and no copyright-expiration
+claim is made. Existing Alert and Attack recordings remain in use.
