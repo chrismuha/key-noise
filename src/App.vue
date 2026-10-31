@@ -4,6 +4,7 @@ import Sirens from './Sirens.vue';
 import KeyNoiseHelp from './KeyNoiseHelp.vue';
 import { startPlaceholderSound } from './placeholder-sounds';
 import { cycleSoundFocus } from './sound-focus';
+import { createInputHold } from './input-hold';
 
 const helpOpen = ref(false);
 const customPadCount = 5;
@@ -37,7 +38,10 @@ function loadSoundTabSetting() {
 const tabSoundsOnly = ref(loadSoundTabSetting());
 const loopSounds = ref(false);
 const headerCollapsed = ref(false);
+const maxInputSounds = 3;
 const activeAudio = new Map();
+const heldAudio = new Set();
+const inputHold = createInputHold({ play: playHeldInput, limit: maxInputSounds });
 const placeholderPlayers = new Set();
 let audioGeneration = 0;
 function toggleHeader() {
@@ -45,17 +49,19 @@ function toggleHeader() {
   if (headerCollapsed.value) mobilePage.value = 'soundboard';
 }
 watch(loopSounds, (value) => {
-  for (const audio of activeAudio.keys()) audio.loop = value;
+  for (const audio of activeAudio.keys()) audio.loop = heldAudio.has(audio) || value;
   for (const player of placeholderPlayers) player.setLoop(value);
 }, { flush: 'sync' });
 function stopAllAudio() {
   audioGeneration++;
+  inputHold.cancelAll();
   for (const [audio, timer] of activeAudio) {
     window.clearInterval(timer);
     audio.pause();
     audio.currentTime = 0;
   }
   activeAudio.clear();
+  heldAudio.clear();
   for (const player of placeholderPlayers) player.stop();
   placeholderPlayers.clear();
   resetMeterSoon();
@@ -66,6 +72,7 @@ function saveSoundTabSetting() {
 }
 const activeTab = ref('keyboard');
 watch(activeTab, stopAllAudio);
+watch(helpOpen, open => { if (open) stopAllAudio(); });
 const mobilePage = ref('soundboard');
 const keyboardPage = ref(1);
 const isMobile = ref(false);
@@ -343,17 +350,26 @@ function startFallbackMeter(audio) {
   meterAnimationFrame = requestAnimationFrame(updateMeter);
 }
 
-async function playAudioUrl(url, limitMs = soundLimitMs.value) {
+function inputSoundAvailable() {
+  if (activeAudio.size + placeholderPlayers.size < maxInputSounds) return true;
+  lastSound.value = '3 sounds maximum · release a sound before starting another.';
+  return false;
+}
+
+async function playAudioUrl(url, limitMs = soundLimitMs.value, held = false) {
   const generation = audioGeneration;
   const audio = new Audio(url);
   audio.volume = window.keyNoiseApi ? 1 : systemVolume.value / 100;
   const isSynced = await syncMeterToAudio(audio);
-  if (generation !== audioGeneration) return;
-  audio.loop = loopSounds.value;
-  await audio.play();
+  if (generation !== audioGeneration || !inputSoundAvailable()) return;
+  activeAudio.set(audio, null);
+  audio.loop = held || loopSounds.value;
+  try { await audio.play(); }
+  catch (error) { activeAudio.delete(audio); throw error; }
   if (generation !== audioGeneration) { audio.pause(); return; }
-  audio.loop = loopSounds.value;
-  const limitTimer = window.setInterval(() => {
+  audio.loop = held || loopSounds.value;
+  if (held) heldAudio.add(audio);
+  const limitTimer = held ? null : window.setInterval(() => {
     if (loopSounds.value) {
       audio.loop = true;
       audio.currentTime = 0;
@@ -369,10 +385,18 @@ async function playAudioUrl(url, limitMs = soundLimitMs.value) {
   audio.addEventListener('ended', () => {
     window.clearInterval(limitTimer);
     activeAudio.delete(audio);
+    heldAudio.delete(audio);
   }, { once: true });
   if (!isSynced) {
     startFallbackMeter(audio);
   }
+  return { stop() {
+    window.clearInterval(limitTimer);
+    activeAudio.delete(audio);
+    heldAudio.delete(audio);
+    audio.pause(); audio.currentTime = 0;
+    resetMeterSoon();
+  } };
 }
 
 async function refreshSystemVolume() {
@@ -395,20 +419,21 @@ async function setSystemVolume() {
   }
 }
 
-async function playPlaceholder(number, kind, limitMs) {
+async function playPlaceholder(number, kind, limitMs, held = false) {
   const generation = audioGeneration;
   try {
     const context = getAudioContext();
     if (!context) throw new Error('Audio unavailable');
     if (context.state !== 'running') await context.resume();
-    if (generation !== audioGeneration) return;
+    if (generation !== audioGeneration || !inputSoundAvailable()) return;
     let player;
-    player = startPlaceholderSound(context, { number, kind, limitMs, volume: systemVolume.value / 100, loop: loopSounds.value, onEnded: () => placeholderPlayers.delete(player) });
+    player = startPlaceholderSound(context, { number, kind, limitMs, held, volume: systemVolume.value / 100, loop: loopSounds.value, onEnded: () => placeholderPlayers.delete(player) });
     placeholderPlayers.add(player);
     isArmed.value = true;
     lastSound.value = `Sound ${number}`;
     meterLevels.value = meterLevels.value.map((_, index) => .2 + ((number + index) % 7) / 10);
     resetMeterSoon(Math.min(limitMs, 240));
+    return player;
   } catch { lastSound.value = 'Could not start audio. Try the sound button again.'; }
 }
 
@@ -421,6 +446,37 @@ async function playMouseButton(binding) {
   lastKey.value = binding.label;
   return playPlaceholder(binding.soundNumber, 'mouse', mouseSoundLimitMs.value);
 }
+
+function keyboardInput(binding) { return { number: binding.soundNumber, kind: 'keyboard', label: binding.key }; }
+function mouseInput(binding) { return { number: binding.soundNumber, kind: 'mouse', label: binding.label }; }
+function customInput(pad) { return { pad }; }
+async function playHeldInput(sound, held) {
+  if (sound.pad) return playCustomPad(sound.pad, held);
+  lastKey.value = sound.label;
+  return playPlaceholder(sound.number, sound.kind, sound.kind === 'mouse' ? mouseSoundLimitMs.value : soundLimitMs.value, held);
+}
+function beginPadPointer(event, sound) {
+  if (event.button !== 0) return;
+  event.currentTarget.setPointerCapture(event.pointerId);
+  inputHold.start(`pointer:${event.pointerId}`, sound);
+}
+function endPadPointer(event, cancel = false) { inputHold.end(`pointer:${event.pointerId}`, cancel); }
+function beginPadKey(event, sound) {
+  if (![' ', 'Enter'].includes(event.key)) return;
+  event.preventDefault();
+  if (!event.repeat) inputHold.start(`pad-key:${event.code || event.key}`, sound);
+}
+function endPadKey(event) {
+  if (![' ', 'Enter'].includes(event.key)) return;
+  event.preventDefault();
+  inputHold.end(`pad-key:${event.code || event.key}`);
+}
+function tapInput(event, sound) {
+  // Pointer/key events handle ordinary activation; keep assistive click support.
+  if (event.detail === 0) void playHeldInput(sound, false);
+}
+function handleMouseUp(event) { inputHold.end(`mouse:${event.button}`); }
+function handleVisibilityChange() { if (document.hidden) stopAllAudio(); }
 
 function saveCustomPads() {
   localStorage.setItem(customPadsStorageKey, JSON.stringify(customPads.value));
@@ -481,17 +537,18 @@ async function chooseCustomMp3(pad) {
   lastSound.value = `${pad.fileName} loaded`;
 }
 
-async function playCustomPad(pad) {
+async function playCustomPad(pad, held = false) {
   if (!pad.fileUrl) {
     lastKey.value = pad.combo || `Custom ${pad.id}`;
-    return playPlaceholder(keys.length + pad.id, 'keyboard', soundLimitMs.value);
+    return playPlaceholder(keys.length + pad.id, 'keyboard', soundLimitMs.value, held);
   }
 
   try {
-    await playAudioUrl(pad.fileUrl);
+    const player = await playAudioUrl(pad.fileUrl, soundLimitMs.value, held);
     isArmed.value = true;
     lastKey.value = pad.combo || `Custom ${pad.id}`;
     lastSound.value = pad.fileName || `Custom ${pad.id}`;
+    return player;
   } catch {
     lastSound.value = `Could not play ${pad.fileName || `custom ${pad.id}`}`;
   }
@@ -540,8 +597,7 @@ function handleRecording(event) {
 function handleKeydown(event) {
   if (helpOpen.value) return;
   if (activeTab.value !== 'keyboard') return;
-  if (event.repeat) return;
-  if (handleRecording(event)) return;
+  if (!event.repeat && handleRecording(event)) return;
   if (event.target instanceof Element && event.target.closest('input, select, textarea, button, a, [contenteditable="true"]')) return;
 
   const combo = getComboFromEvent(event);
@@ -549,7 +605,8 @@ function handleKeydown(event) {
     const customPad = customPads.value.find((pad) => pad.combo === combo);
     if (customPad) {
       event.preventDefault();
-      playCustomPad(customPad);
+      if (event.repeat) return;
+      inputHold.start(`key:${event.code || event.key}`, customInput(customPad));
       return;
     }
   }
@@ -564,12 +621,15 @@ function handleKeydown(event) {
   if (!binding) return;
 
   event.preventDefault();
+  if (event.repeat) return;
   isArmed.value = true;
   lastKey.value = keyName;
-  playSound(binding.soundNumber);
+  inputHold.start(`key:${event.code || event.key}`, keyboardInput(binding));
 }
 
 function handleKeyup(event) {
+  inputHold.end(`key:${event.code || event.key}`);
+  inputHold.end(`pad-key:${event.code || event.key}`);
   if (getKeyName(event)) {
     isArmed.value = false;
   }
@@ -587,7 +647,7 @@ function handleMouseDown(event) {
   if (!binding) return;
 
   event.preventDefault();
-  playMouseButton(binding);
+  inputHold.start(`mouse:${event.button}`, mouseInput(binding));
 }
 
 function handleContextMenu(event) {
@@ -625,6 +685,9 @@ onMounted(() => {
   window.addEventListener('keydown', handleTabAndEscapeFocus);
   window.addEventListener('keyup', handleKeyup);
   window.addEventListener('mousedown', handleMouseDown);
+  window.addEventListener('mouseup', handleMouseUp);
+  window.addEventListener('blur', stopAllAudio);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
   window.addEventListener('contextmenu', handleContextMenu);
 });
 
@@ -638,6 +701,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleTabAndEscapeFocus);
   window.removeEventListener('keyup', handleKeyup);
   window.removeEventListener('mousedown', handleMouseDown);
+  window.removeEventListener('mouseup', handleMouseUp);
+  window.removeEventListener('blur', stopAllAudio);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   window.removeEventListener('contextmenu', handleContextMenu);
 });
 </script>
@@ -757,8 +823,8 @@ onBeforeUnmount(() => {
         :key="binding.key"
         type="button"
         class="key"
-        data-sound-button
-        @click="playSound(binding.soundNumber)"
+        data-sound-button aria-description="Tap to play. Hold to sustain; release to stop."
+        @pointerdown="beginPadPointer($event, keyboardInput(binding))" @pointerup="endPadPointer($event)" @pointercancel="endPadPointer($event, true)" @lostpointercapture="endPadPointer($event, true)" @keydown="beginPadKey($event, keyboardInput(binding))" @keyup="endPadKey" @click="tapInput($event, keyboardInput(binding))"
       >
         <span>{{ binding.key }}</span>
         <small>Play sound</small>
@@ -770,9 +836,9 @@ onBeforeUnmount(() => {
         :key="`pinned-${pad.id}`"
         type="button"
         class="key pinned-key"
-        data-sound-button
+        data-sound-button aria-description="Tap to play. Hold to sustain; release to stop."
         :class="{ loaded: isAllowedCustomCombo(pad.combo), missing: !isAllowedCustomCombo(pad.combo) }"
-        @click="playCustomPad(pad)"
+        @pointerdown="beginPadPointer($event, customInput(pad))" @pointerup="endPadPointer($event)" @pointercancel="endPadPointer($event, true)" @lostpointercapture="endPadPointer($event, true)" @keydown="beginPadKey($event, customInput(pad))" @keyup="endPadKey" @click="tapInput($event, customInput(pad))"
       >
         <span>{{ pad.combo || `Custom ${pad.id}` }}</span>
         <small>{{ pad.fileName || 'Built-in sound' }}</small>
@@ -785,8 +851,8 @@ onBeforeUnmount(() => {
         :key="binding.label"
         type="button"
         class="key mouse-key"
-        data-sound-button
-        @click="playMouseButton(binding)"
+        data-sound-button aria-description="Tap to play. Hold to sustain; release to stop."
+        @pointerdown="beginPadPointer($event, mouseInput(binding))" @pointerup="endPadPointer($event)" @pointercancel="endPadPointer($event, true)" @lostpointercapture="endPadPointer($event, true)" @keydown="beginPadKey($event, mouseInput(binding))" @keyup="endPadKey" @click="tapInput($event, mouseInput(binding))"
         @contextmenu.prevent
       >
         <span>{{ binding.label }}</span>
@@ -829,7 +895,7 @@ onBeforeUnmount(() => {
             </svg>
           </button>
 
-          <button type="button" class="custom-trigger" data-sound-button @click="playCustomPad(pad)">
+          <button type="button" class="custom-trigger" data-sound-button aria-description="Tap to play. Hold to sustain; release to stop." @pointerdown="beginPadPointer($event, customInput(pad))" @pointerup="endPadPointer($event)" @pointercancel="endPadPointer($event, true)" @lostpointercapture="endPadPointer($event, true)" @keydown="beginPadKey($event, customInput(pad))" @keyup="endPadKey" @click="tapInput($event, customInput(pad))">
             <span>Custom {{ pad.id }}</span>
             <strong>{{ pad.combo || 'No combo' }}</strong>
             <small>{{ pad.fileName || 'Built-in sound' }}</small>

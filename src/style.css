@@ -488,7 +488,7 @@ body { min-width: 0; }
   padding: calc(28px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) max(12px, env(safe-area-inset-right, 0px)) calc(28px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) max(12px, env(safe-area-inset-left, 0px));
 }
 .tabs { display: grid; width: min(100%, 540px); grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tabs button { min-width: 0; min-height: 44px; padding: 8px; overflow-wrap: anywhere; }
+.tabs button { min-width: 0; min-height: 60px; padding: 14px 16px; overflow-wrap: anywhere; font-size: 1.25rem; line-height: 1.4; color: #fff; }
 .readout { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .settings-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
 .settings-field, .headline, .section-title > * { min-width: 0; }
@@ -579,10 +579,12 @@ button, input, select { touch-action: manipulation; }
 .sound-navigation-settings p { margin: 0 0 6px; color: #bdc5cf; font-size: 12px; line-height: 1.5; }
 
 .soundboard-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
-.collapse-header { min-height: 44px; padding: 8px 12px; border: 1px solid #4eb9ab80; border-radius: 8px; background: #21413e; color: #f7f8fb; cursor: pointer; }
+.collapse-header { min-height: 48px; min-width: 144px; padding: 10px 18px; border: 2px solid #89aaa0; border-radius: 8px; background: #344c44; color: #fff; cursor: pointer; font: 600 1.125rem/1.4 system-ui, sans-serif; }
+.collapse-header:hover { background: #425e54; }
+.collapse-header:focus-visible { outline: 3px solid #ffe17a; outline-offset: 3px; }
 .loop-option { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
 .loop-option input { width: 24px; height: 24px; accent-color: #4eb9ab; }
-.soundboard-toolbar .stop-siren { padding: 8px 12px; }
+.soundboard-toolbar .stop-siren { min-height: 48px; padding: 10px 18px; color: #fff; font: 600 1.125rem/1.4 system-ui, sans-serif; }
 .app.board-only .tabs,
 .app.board-only .mobile-navigation,
 .app.board-only .mobile-settings-content,

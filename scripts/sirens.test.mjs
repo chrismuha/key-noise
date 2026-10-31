@@ -578,6 +578,7 @@ test('running signal dips stay above rotor-stopping speeds until the final coast
   }
 });
 const { startPlaceholderSound } = await sourceModule('placeholder-sounds');
+const { createInputHold } = await sourceModule('input-hold');
 test('keyboard and mouse fake sounds generate non-silent, click-free buffers and obey volume/loop/stop', () => {
   for (const kind of ['keyboard', 'mouse']) {
     let samples; let source;
@@ -601,7 +602,7 @@ test('Keyboard and Mouse always play built-in sounds despite saved Real preferen
   const script = (await readFile(new URL('../src/App.vue', import.meta.url), 'utf8')).split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
   const players = [];
   const state = runInNewContext(`${script}\n;({ activeTab, playSound, playMouseButton, systemVolume, loopSounds, stopAllAudio, statusText, lastSound })`, {
-    ref, computed, watch, onMounted() {}, onBeforeUnmount() {},
+    ref, computed, watch, createInputHold, onMounted() {}, onBeforeUnmount() {},
     localStorage: { getItem(key) { return ['key-noise-keyboard-source', 'key-noise-mouse-source'].includes(key) ? 'real' : null; }, setItem() {} },
     window: { AudioContext: class { state = 'running'; }, setTimeout() { return 0; }, clearTimeout() {}, clearInterval() {} },
     startPlaceholderSound(context, options) { const player = { ...options, setVolume(value) { this.volume = value; }, setLoop(value) { this.loop = value; }, stop() { this.stopped = true; } }; players.push(player); return player; }
@@ -620,6 +621,11 @@ test('Keyboard and Mouse always play built-in sounds despite saved Real preferen
   assert.equal(players[1].volume, 0);
   assert.equal(state.statusText.value, '2 mouse sounds ready');
   assert.equal(state.lastSound.value, 'Sound 2');
+  state.stopAllAudio();
+  const before = players.length;
+  for (let number = 1; number <= 4; number++) await state.playSound(number);
+  assert.equal(players.length - before, 3, 'ordinary taps share the same three-voice cap');
+  assert.match(state.lastSound.value, /3 sounds maximum/);
   state.stopAllAudio();
 });
 
@@ -1178,4 +1184,104 @@ test('main mode dropdown cancels a pending recording lookup without late playbac
   resolveFile({ url: './alert.m4a', fileName: 'alert.m4a' }); await pending;
   assert.equal(recordings.length, 0);
   assert.equal(board.playing.value.size, 0);
+});
+
+test('a press starts one sustained voice without a second tap-to-hold attack', async () => {
+  const voices = [];
+  const controller = createInputHold({ play(sound, held) { const voice = { held, stop() {}, release() { this.released = true; } }; voices.push(voice); return voice; } });
+  controller.start('key:KeyQ', {}); controller.start('key:KeyQ', {});
+  await Promise.resolve();
+  assert.equal(voices.length, 1); assert.equal(voices[0].held, true);
+  controller.end('key:KeyQ'); assert.equal(voices[0].released, true);
+});
+test('releasing one input preserves other held voices and Stop all retires the rest', async () => {
+  const voices = [];
+  const controller = createInputHold({ play() { const voice = { stop() { this.stopped = true; }, release() { this.released = true; } }; voices.push(voice); return voice; } });
+  controller.start('pointer:1', {}); controller.start('pointer:2', {}); await Promise.resolve();
+  controller.end('pointer:1'); assert.equal(voices[0].released, true); assert.equal(voices[1].released, undefined);
+  controller.cancelAll(); assert.equal(voices[1].stopped, true);
+});
+test('release or cancellation before audio starts prevents a late held voice', async () => {
+  for (const cancel of [false, true]) {
+    let resolveVoice; let stopped = 0;
+    const controller = createInputHold({ play() { return new Promise(resolve => { resolveVoice = resolve; }); } });
+    controller.start('mouse:0', {}); controller.end('mouse:0', cancel);
+    resolveVoice({ stop() { stopped++; } }); await Promise.resolve();
+    assert.equal(stopped, 1);
+  }
+});
+test('held keyboard and mouse voices sustain beyond playback limits and release with a finite fade', () => {
+  for (const kind of ['keyboard', 'mouse']) {
+    let source; let samples; let fade;
+    const gain = { value: .5, setValueAtTime(v) { this.value = v; }, cancelScheduledValues() {}, linearRampToValueAtTime(v, time) { fade = [v, time]; } };
+    const context = { currentTime: 10, sampleRate: 48000, destination: {}, createBuffer(c, length) { samples = new Float32Array(length); return { getChannelData: () => samples }; }, createGain() { return { gain, connect() {}, disconnect() {} }; }, createBufferSource() { source = { connect() {}, disconnect() {}, start() {}, stop(time) { this.stopTime = time; } }; return source; } };
+    const voice = startPlaceholderSound(context, { number: 1, kind, held: true, limitMs: 1, volume: .5 });
+    assert.equal(source.loop, true); assert.ok(samples.length > 1000);
+    voice.setLoop(false); assert.equal(source.loop, true, 'Loop checkbox does not interrupt an actively held sound');
+    voice.release(); assert.deepEqual(fade, [0, 10.04]); assert.equal(source.stopTime, 10.04);
+  }
+});
+
+test('built-in taps and holds use a strong shared level without a held peak boost', () => {
+  for (const [kind, count] of [['keyboard', 27], ['mouse', 2]]) {
+    for (let number = 1; number <= count; number++) {
+      function render(held) {
+        let samples;
+        const gain = { value: 1, setValueAtTime(v) { this.value = v; }, linearRampToValueAtTime() {}, cancelScheduledValues() {} };
+        const context = { currentTime: 0, sampleRate: 48000, destination: {}, createBuffer(c, length) { samples = new Float32Array(length); return { getChannelData: () => samples }; }, createGain() { return { gain, connect() {}, disconnect() {} }; }, createBufferSource() { return { connect() {}, disconnect() {}, start() {}, stop() {} }; } };
+        startPlaceholderSound(context, { kind, number, held });
+        return { rms: Math.sqrt(samples.reduce((sum, v) => sum + v * v, 0) / samples.length), peak: samples.reduce((peak, v) => Math.max(peak, Math.abs(v)), 0) };
+      }
+      const tap = render(false), held = render(true);
+      assert.ok(tap.rms > .15 && held.rms > .15, `${kind} ${number}: both must remain clearly audible`);
+      assert.ok(held.rms / tap.rms < 1.25, `${kind} ${number}: hold must stay close to tap loudness`);
+      assert.ok(held.peak * 3 < 1, `${kind} ${number}: three simultaneous built-in voices must retain headroom`);
+      assert.ok(held.peak <= tap.peak * 1.01, `${kind} ${number}: hold must not boost peaks`);
+    }
+  }
+});
+
+test('holding Space prevents scrolling on repeated keydown without retriggering sounds', async () => {
+  const { runInNewContext } = await import('node:vm');
+  const { ref, computed, watch, nextTick } = await import('vue');
+  const script = (await readFile(new URL('../src/App.vue', import.meta.url), 'utf8')).split('<script setup>')[1].split('</script>')[0].replace(/^import .*;\n/gm, '');
+  let starts = 0;
+  class Element { closest() { return true; } }
+  const board = runInNewContext(`${script}\n;({ handleKeydown, customPads, helpOpen })`, {
+    ref, computed, watch, Element, onMounted() {}, onBeforeUnmount() {},
+    localStorage: { getItem() { return null; } },
+    window: { clearTimeout() {}, clearInterval() {}, setTimeout() { return 0; } },
+    createInputHold: () => ({ start() { starts++; }, end() {}, cancelAll() {} })
+  });
+  function press(repeat, extra = {}) {
+    let prevented = false;
+    board.handleKeydown({ key: ' ', code: 'Space', repeat, target: null, preventDefault() { prevented = true; }, ...extra });
+    return prevented;
+  }
+  assert.equal(press(false), true);
+  for (let i = 0; i < 30; i++) assert.equal(press(true), true);
+  assert.equal(starts, 1);
+  board.customPads.value[0].combo = 'Shift+Space';
+  assert.equal(press(false, { shiftKey: true }), true);
+  assert.equal(press(true, { shiftKey: true }), true);
+  assert.equal(starts, 2);
+  assert.equal(press(true, { target: new Element() }), false, 'leave normal controls alone');
+  board.helpOpen.value = true;
+  assert.equal(press(true), false, 'leave Help navigation alone');
+  await nextTick();
+});
+
+test('only three held inputs can start, including pending voices, and release frees a slot', async () => {
+  const voices = [];
+  const pending = [];
+  const controller = createInputHold({ play(sound) { return new Promise(resolve => { pending.push(() => { const voice = { sound, stop() {}, release() {} }; voices.push(voice); resolve(voice); }); }); } });
+  for (let number = 1; number <= 4; number++) controller.start(`key:${number}`, { number });
+  assert.equal(pending.length, 3, 'the fourth key cannot reserve or start audio');
+  pending.splice(0).forEach(resolve => resolve()); await Promise.resolve();
+  assert.equal(voices.length, 3);
+  controller.end('key:2'); controller.start('key:4', { number: 4 });
+  assert.equal(pending.length, 1);
+  pending[0](); await Promise.resolve();
+  assert.equal(voices.at(-1).sound.number, 4);
+  controller.cancelAll();
 });

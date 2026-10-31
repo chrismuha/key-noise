@@ -304,7 +304,8 @@ Reported issues, and Controls & tips. The button hides with the header controls.
 The dialog includes searchable notes for every siren, actual bundled mode
 coverage, held-Test support, source limitations, and audio credits. Reported
 fixes are distinguished from remaining limitations; this is not a live tracker.
-Use Previous/Next or section buttons to navigate and Escape or Done to close.
+Use the section tabs (or section dropdown in narrower windows) to navigate,
+and Escape or the header close button to close.
 
 
 ## Reusable Help and Contact Us
@@ -327,10 +328,30 @@ authorized yet.
 
 Contact details are from [Muha Computer Repair](https://muhacomputer.com/):
 [muhachris297@gmail.com](mailto:muhachris297@gmail.com) and
-[(315) 338-1919](tel:+13153381919). Contact Us opens a popup; only selecting a
+[(315) 338-1919](tel:+13153381919). Contact Us opens a full-screen overlay; only selecting a
 contact link opens the mail or phone app. Help and Contact Us both hide when
 the header controls are collapsed.
 
 For this change, review uses the existing live dev browser. No build files,
 package versions, or build configuration are changed, and no test/build command
 is run.
+
+Help, Read Me, and Contact Us fill the viewport. Their text uses at least
+18px at default sizing with high-contrast colors, including metadata and
+status labels. Help is blue; Contact Us is purple. Both retain visible focus
+and large touch targets. Small screens can scroll the section navigation and
+content without shrinking the text.
+
+Keyboard and Mouse support hold-to-sustain: a press starts one smoothly faded
+voice, with no tap-to-hold restart. Tap for a short sound,
+or hold a pad, its mapped key, or a mouse button for sustained playback until
+release. Up to three sounds can play together; additional presses are ignored until
+a sound is released. Holding a focused pad with Space/Enter
+also works. Release stops that held voice even with Loop enabled. Custom pads
+sustain their built-in tone, or loop their uploaded recording without adding
+synthetic audio. Stop all, changing tabs, opening Help, losing window focus,
+and hiding the page cancel held inputs and pending audio starts.
+
+The in-app **Help → Controls & tips** is the user guide. It covers current
+hold/release behavior, the three-sound limit, safe stopping, Space handling,
+full-screen Help navigation, release history, toolbar buttons, and Contact Us.

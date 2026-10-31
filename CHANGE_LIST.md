@@ -1,5 +1,114 @@
 # key-noise Change List
 
+## October 30, 2026 — Three-Sound Limit & Complete Guide Update
+
+- Limit Keyboard/Mouse playback to three concurrent sounds, including pending
+  held starts, normal taps, uploaded custom audio, and release tails. Extra
+  presses are ignored; release a voice before pressing another. Sirens keeps
+  its separate multiple-sound control.
+- Start one smooth voice per press instead of cutting off a tap and starting
+  a second attack. Restore balanced audible tones, a 15ms fade-in, and a 40ms
+  release; three built-in voices retain unclipped headroom.
+- Support held pads, mapped keys, mouse buttons, touch, focused Space/Enter,
+  and uploaded custom recordings. Stop/cancel pending and active holds on
+  release, tab switches, Help opening, blur, and page hiding.
+- Prevent held mapped Space from scrolling or retriggering sounds.
+- Make Help/Read Me/Contact full-screen with large high-contrast text, a slim
+  section picker in narrow windows, tabs on wide screens, and no crowded footer.
+- Soften Help/Contact colors and match their button sizing with Hide controls;
+  brighten Stop all sounds and enlarge Keyboard/Mouse/Sirens navigation tabs.
+- Update Help’s Controls & tips user guide and README for all final behavior,
+  including the three-sound cap, playback/release, readable navigation, contact
+  links, and header hiding. Historical entries below retain earlier changes.
+- Validation: all 83 unit tests pass, including held starts and ordinary taps
+  respecting the limit, shared volume/headroom, Space repeats, and cleanup.
+  No local build is run and no build files are changed.
+
+## October 30, 2026 — Smooth, Audible Pressed Sounds
+
+- Start a single sustained voice immediately on press, with a 15ms fade-in and
+  40ms release. Remove the abrupt tap-to-hold replacement that caused a pop.
+- Restore an audible shared level for built-in taps and holds. Replace the
+  overly quiet RMS-normalized sustain and percussive tap envelope with balanced
+  tones; holding does not introduce a louder peak or a second attack.
+
+## October 30, 2026 — Prevent Held Space Scrolling
+
+- Prevent the default action for every repeated mapped Space keydown, while
+  starting its held sound only once. The old early repeat return let browser
+  scrolling run while the key was held. Cover Shift+Space custom bindings too.
+- Preserve normal Space behavior in form controls and Help.
+
+## October 30, 2026 — Match Held Sound Volume
+
+- Match sustained keyboard/mouse tones to the average energy of their normal
+  tap sound instead of sustaining the full waveform at a much louder level.
+- Add a short fade-in when entering sustain. Verify matched RMS volume and
+  no increased peaks across all 27 keyboard tones and both mouse sounds.
+
+## October 30, 2026 — Hold Keyboard & Mouse Sounds
+
+- Tap a keyboard/mouse pad for its normal sound; hold beyond 100ms to sustain
+  it until release. Support mapped keys, left/right mouse buttons, touch, and
+  Space/Enter on focused pads, including overlapping holds.
+- Use seamless sustained built-in tones and a short release fade. Custom pads
+  hold their built-in tone or loop their uploaded recording without synthesis.
+- Keep Loop independent of holding; releasing a held voice stops it even with
+  Loop enabled. Preserve normal tap playback and prevent duplicate click sounds.
+- Cancel held/pending voices on pointer cancellation, Stop all, tab switches,
+  Help opening, window blur, and page hiding so no sound remains stuck.
+- Validation: all 81 unit tests pass, including taps, multiple holds, late
+  audio startup, cancellation, held playback limits, and release fading. No
+  local build is run.
+
+## October 30, 2026 — Softer Help Controls
+
+- Slim the Help section picker and close control to 44px without shrinking
+  their readable text. Reduce header padding to give notes more room.
+- Enlarge Keyboard, Mouse Buttons, and Sirens tabs to 20px text and at least
+  60px height, with more padding and bright white labels.
+- Give Stop all sounds the same bright white, 18px semibold text as the other
+  toolbar controls, with matching height and padding.
+- Match Hide/Show controls to the Help/Contact Us button sizing, with readable
+  white text, a muted green background, and a visible keyboard focus ring.
+- Make Help and Contact Us equal-size toolbar buttons with a 144px minimum
+  width and soften their distinct blue/purple colors. Tone down the selected
+  Read Me tab and contact links while preserving white text and visible focus.
+
+## October 30, 2026 — Give Help Content Room to Read
+
+- Use a single slim header with a section picker on phones and narrower
+  windows; keep tabs for wide screens. All notes remain one selection away.
+- Remove the redundant pagination/footer controls. The header close button
+  and Escape still close Help, and most of the screen is now scrollable notes.
+- Increase body text to 20px at default sizing and limit desktop reading width
+  so lines remain comfortable without reducing text on phones.
+
+## October 30, 2026 — Unified Help Navigation Header
+
+- Combine the Help title, section tabs, and close button into one header that
+  stays visible while the notes scroll. Read Me/release notes and all Help
+  sections remain directly accessible without horizontal tab scrolling.
+- Wrap the tabs on desktop and use a two-column tab layout on narrow screens
+  while preserving readable text, large targets, and the full-screen overlay.
+
+## October 30, 2026 — Compact Help Header
+
+- Replace the oversized Help/Contact banner with a compact title and close
+  button. Remove the repeated app branding, decorative icon, and subtitle so
+  the notes have more screen space. Keep header text white and readable.
+
+## October 30, 2026 — Full-Screen Accessible Help
+
+- Make Help, Read Me, and Contact Us full-screen overlays on all viewport sizes.
+- Increase text to at least 18px at default sizing, including navigation, source
+  notes, model details, status labels, and contact links. Replace muted gray
+  text with high-contrast white or bright accent colors.
+- Give Help a blue button and Contact Us a purple button, retaining clear text
+  labels, visible keyboard focus, and touch targets at least 48px high.
+- Preserve scrollable content, section navigation, Escape/Done, focus return,
+  and hiding both buttons when header controls are collapsed.
+
 ## October 30, 2026 — Update Automatic Sound Playback Regression
 
 - Correct the Keyboard/Mouse regression that still referenced removed source
