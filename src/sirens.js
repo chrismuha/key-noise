@@ -25,7 +25,10 @@ export const sirens = families.flatMap(([manufacturer, type, models]) => models.
     recordingNote: 'Alert, Attack, Fire shared with STH-10A · Pulse capable'
   } : {}),
   ...(model === 'WPS-2900 series' ? { recordingNote: '560 Hz series sample · speaker configuration unspecified' } : {})
-})));
+}))).sort((a, b) =>
+  a.manufacturer.localeCompare(b.manufacturer, 'en', { sensitivity: 'base' }) ||
+  a.model.localeCompare(b.model, 'en', { numeric: true, sensitivity: 'base' })
+);
 export const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a'];
 export function soundSources(siren, mode) {
   if (siren.unsupportedModes?.includes(mode)) return [];

@@ -10,6 +10,7 @@ const loading = ref(true);
 const sections = [
   { id: 'known', label: 'Known issues', mark: '!' },
   { id: 'models', label: 'Siren availability', mark: '♫' },
+  { id: 'credits', label: 'Recording credits', mark: '©' },
   { id: 'reported', label: 'Reported issues', mark: '↺' },
   { id: 'guide', label: 'Controls & tips', mark: '?' }
 ];
@@ -58,7 +59,10 @@ onBeforeUnmount(() => { mounted = false; });
             </details>
             <p v-if="!models.length">No matching models. Try a manufacturer or a shorter model name.</p>
           </template>
-          <p><a href="./sounds/sirens/CREDITS.html" target="_blank" rel="noopener">Full audio credits, licenses & source notes ↗</a></p>
+        </template>
+        <template #credits>
+          <div class="read-me-heading"><h2>Recording credits</h2></div>
+          <p><a href="./sounds/sirens/CREDITS.html" target="_blank" rel="noopener">View recording credits, licenses & source notes ↗</a></p>
         </template>
         <template #reported>
           <div class="read-me-heading"><p class="read-me-eyebrow">USER FEEDBACK</p><h2>Reported issues</h2><p>A record of reported behavior and the current response. A code fix is not a guarantee that every recording sounds physically accurate.</p></div>
@@ -71,7 +75,7 @@ onBeforeUnmount(() => { mounted = false; });
         <template #guide>
           <div class="read-me-heading"><p class="read-me-eyebrow">QUICK GUIDE</p><h2>Controls & tips</h2></div>
           <article class="read-me-card"><h3>Choose your siren sound source</h3><p>On Sirens, Fake sounds are generated previews. Real sounds play audio files only. Choose the source and mode, then press a ready model button. Gray/black Real pads have no file for the selected mode. In the simulator, dimmed Real signal buttons are disabled because their recording is unavailable. Test also needs dedicated hold-to-run startup and sustain audio.</p></article>
-          <article class="read-me-card"><h3>Play, layer, loop, and stop</h3><p>Enable multiple sounds to layer sirens. Loop repeats a normal signal while enabled; it does not repeat a cancelled shutdown. Green means sound is playing or winding down, not just that a file exists.</p><p>First Stop or cabinet Cancel begins shutdown. The signal lamp goes out immediately. A second Stop or Cancel ends the sound immediately; tapping a coasting soundboard pad also stops it. Changing the main mode dropdown stops sounds immediately.</p></article>
+          <article class="read-me-card"><h3>Play, layer, loop, and stop</h3><p>Enable multiple sounds to layer sirens. Loop repeats a normal signal while enabled; it does not repeat a cancelled shutdown. Green means sound is playing or winding down, not just that a file exists.</p><p>First Stop or cabinet Cancel begins shutdown. The signal lamp goes out immediately. Releasing Test starts its wind-down; the first explicit Stop or Cancel preserves that coast. A second Stop or Cancel ends the sound immediately; tapping a coasting soundboard pad also stops it. Changing the main mode dropdown stops sounds immediately.</p></article>
           <article class="read-me-card"><h3>Open the yellow simulator</h3><p>Press and hold a siren pad to open its control panel. Hold Test to run it, release to wind down, and press again to re-power. Alert, Attack, Fire, and Pulse use the selected source’s behavior and available files.</p></article>
           <article class="read-me-card"><h3>Cancel and resume real recordings</h3><p>Press Cancel to begin the recorded shutdown, then press the same signal to resume. Analyzed mechanical recordings select positions with a similar measured pitch, without changing audio speed. Held Real Test interpolates its startup and shutdown curves when released or pressed again.</p><p>If no reliable pitch match is available, playback uses its normal recorded transition. Volume differences, background noise, and fixed source audio can still be audible. Press Cancel again for immediate silence.</p></article>
           <article class="read-me-card"><h3>STH-10 variants and Pulse</h3><p>Choose STH-10A, B, or C as separate models. C shares A’s Alert, Attack, and Fire sounds; within this family, Pulse is available only on C. A includes Alert, Attack, Fire, and Test recordings; C includes Alert, Attack, Fire, and Pulse. B currently has no bundled recordings.</p><p>Fake Pulse is an illustrative steady-pitch tone with one second on and one second off. Real Pulse follows the supplied audio’s own pattern and duration. Check Siren availability for source details and current coverage.</p></article>

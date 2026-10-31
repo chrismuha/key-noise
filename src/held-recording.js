@@ -1,7 +1,7 @@
 // Actual recorded startup -> authored sustain loop -> actual recorded shutdown.
 // Playhead matching changes which part plays, never its pitch or playback rate.
 export function startHeldRecording(context, power, shutdown, {
-  loopStart, loopEnd, powerCurve = [], windDownCurve = [], destination = context.destination, onEnded
+  loopStart, loopEnd, powerCurve = [], windDownCurve = [], initialSpeed = 0, destination = context.destination, onEnded
 }) {
   let current;
   let phase = 'power';
@@ -83,6 +83,11 @@ export function startHeldRecording(context, power, shutdown, {
     closed = true;
     for (const voice of [...voices]) dispose(voice);
   }
-  play(power, 0, true);
-  return { release, resume, stop, get phase() { return phase; } };
+  play(power, initialSpeed > 0 ? Math.min(loopStart, positionFor(powerCurve, initialSpeed, initialSpeed * loopStart)) : 0, true);
+  return { release, resume, stop, get phase() { return phase; }, get speed() {
+    const elapsed = playhead();
+    return phase === 'coast'
+      ? valueAt(windDownCurve, elapsed, Math.max(0, 1 - elapsed / shutdown.duration))
+      : elapsed >= loopStart ? 1 : valueAt(powerCurve, elapsed, elapsed / Math.max(.01, loopStart));
+  } };
 }

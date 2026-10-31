@@ -1,5 +1,16 @@
 # key-noise Change List
 
+## October 31, 2026 — Siren Controls and Continuous Switching
+
+- Preserve Test wind-down on the first explicit Cancel after releasing Test;
+  a second deliberate Cancel still stops immediately. Applies to Real and Fake.
+- Keep outgoing recorded signals audible until replacements start, then crossfade
+  for 150 ms. Match motor speed across Alert, Attack, Fire, and held Test.
+- Alphabetize manufacturers, models, and mode options; default to Alert.
+- Restore a single row of cabinet buttons and move recording credits into Help.
+- Replace STH-10A/C Attack with the supplied Siren Archives excerpt and matching
+  shutdown. Preserve the original Alert and Test audio.
+
 ## October 30, 2026 — Recorded Transition and Availability Fixes
 
 - Match analyzed mechanical signal and shutdown pitch positions on Cancel

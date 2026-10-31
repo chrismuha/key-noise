@@ -260,11 +260,11 @@ test('all four fake modes have distinct pitch patterns and Test is a brief low g
 test('changing the main mode stops the current voice without recreating it', async () => {
   const { board, previews, nextTick } = await soundboard();
   await board.play(sirens[0]);
-  assert.equal(previews[0].mode, 'attack');
+  assert.equal(previews[0].mode, 'alert');
   board.sirenMode.value = 'test'; await nextTick();
   assert.equal(board.playing.value.size, 0);
   assert.equal(previews[0].stopped, true);
-  assert.equal(previews[0].mode, 'attack');
+  assert.equal(previews[0].mode, 'alert');
   assert.equal(previews.length, 1);
   board.stop();
 });
@@ -497,12 +497,13 @@ test('Test does not restart an active signal or a coasting Test session', async 
   original.stop = function(options) { if (options?.immediate) this.end(); };
   await board.beginSimulatorTest();
   assert.equal(previews.length, 1);
-  assert.equal(original.resumed, 1);
-  assert.equal(board.sirenMode.value, 'fire');
+  assert.equal(original.transitions, 1);
+  assert.equal(original.mode, 'test');
+  assert.equal(board.sirenMode.value, 'test');
   board.releaseSimulatorTest();
   await board.beginSimulatorTest();
   assert.equal(previews.length, 1);
-  assert.equal(original.resumed, 2);
+  assert.equal(original.resumed, 1);
   assert.equal(board.playing.value.size, 1);
   board.stop();
 });
@@ -715,13 +716,18 @@ test('cabinet switches signals on one rotor instead of stopping/recreating it', 
   assert.equal(board.simulatorActiveMode.value, 'fire');
   board.stop();
 });
-test('recorded mode changes fade the previous file before starting the next', async () => {
-  const { board, recordings, nextTick } = await soundboard();
+test('recorded mode changes overlap the voices before retiring the previous file', async () => {
+  const { board, recordings, nextTick, sandbox } = await soundboard();
   board.soundMode.value = 'real'; await nextTick();
   board.openSimulator(sirens[0]);
   await board.simulatorCommand('alert');
+  const timers = [];
+  sandbox.window.setTimeout = callback => { timers.push(callback); return timers.length; };
   await board.simulatorCommand('fire');
   assert.equal(recordings.length, 2);
+  assert.notEqual(recordings[0].paused, true);
+  assert.notEqual(recordings[1].paused, true);
+  timers.forEach(callback => callback());
   assert.equal(recordings[0].paused, true);
   assert.notEqual(recordings[1].paused, true);
   board.stop();
@@ -1020,12 +1026,12 @@ test('tapping a coasting soundboard pad stops it; simulator power controls still
 });
 
 
-test('recorded chime and air-horn modes reset to Attack when switching to fake sounds', async () => {
+test('recorded chime and air-horn modes reset to Alert when switching to fake sounds', async () => {
   const { board, nextTick } = await soundboard();
   board.soundMode.value = 'real'; await nextTick();
   board.sirenMode.value = 'chime'; await nextTick();
   board.soundMode.value = 'fake'; await nextTick();
-  assert.equal(board.sirenMode.value, 'attack');
+  assert.equal(board.sirenMode.value, 'alert');
 });
 
 test('Dropbox audit accounts for source files and exposes STH-10 playback and loop components accurately', async () => {
@@ -1040,6 +1046,8 @@ test('Dropbox audit accounts for source files and exposes STH-10 playback and lo
   }
   const sth10 = recordings.filter(recording => recording.sirenId === 'federal-signal-sth-10');
   assert.deepEqual(sth10.map(recording => recording.mode).sort(), ['alert', 'attack', 'fire', 'test']);
+  assert.equal(sth10.find(recording => recording.mode === 'attack').sourceUrl, 'https://www.youtube.com/watch?v=uly8yG2oBCs');
+  for (const mode of ['alert', 'test']) assert.equal(sth10.find(recording => recording.mode === mode).author, 'Railroader3921');
   assert.match(inventory.files.find(file => file.originalFile === 'federalsignal_sth10_startloop.wav').disposition, /hold-to-run/);
   assert.ok(recordings.some(recording => recording.sirenId === 'american-signal-e-class' && recording.mode === 'chime'));
   assert.ok(recordings.some(recording => recording.sirenId === 'whelen-wps-4004' && recording.mode === 'airhorn'));
@@ -1415,4 +1423,139 @@ test('bundled native-pitch profiles cover STH-10 early cancellation without edit
   const offset = matchRecordedPosition(original, 2, tail);
   assert.ok(offset > 0, 'partial startup skips the full-speed beginning of the shutdown');
   assert.ok(Math.abs(tail.find(([time]) => time === offset)[1] - original.find(([time]) => time === 2)[1]) < 25);
+});
+
+
+test('cabinet recorded signal changes seek matching powered audio rather than replaying startup', async () => {
+  const { board, recordings, nextTick, sandbox } = await soundboard();
+  sandbox.getRecordingDetails = async () => ({ pitchProfile: [[0, 100], [1, 300], [2, 600], [3, 600], [4, 300]], windDownStartSeconds: 4 });
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('alert');
+  recordings[0].currentTime = 2;
+  for (const mode of ['fire', 'attack', 'test', 'alert']) {
+    await board.simulatorCommand(mode);
+    assert.equal(recordings.at(-1).currentTime, 2, `${mode} skips startup at full speed`);
+    assert.notEqual(recordings.at(-2).paused, true, 'outgoing recording stays audible during the crossfade');
+    assert.equal(board.playing.value.size, 1);
+  }
+  board.stop();
+});
+
+test('switching between recorded signals and held Test preserves motor speed', async () => {
+  const { board, recordings, nextTick, sandbox } = await soundboard();
+  sandbox.getRecordingDetails = async () => ({ pitchProfile: [[0, 100], [1, 300], [2, 600], [3, 600]], windDownStartSeconds: 3 });
+  sandbox.getRecordingCatalog = async () => ({ heldTests: [{ sirenId: sirens[0].id, fileName: 'power.m4a', windDownFileName: 'tail.m4a', loopStartSeconds: 2, loopEndSeconds: 3 }] });
+  sandbox.loadRecordedBuffer = async () => ({ duration: 10 });
+  let options;
+  sandbox.startHeldRecording = (context, power, shutdown, supplied) => {
+    options = supplied;
+    return { speed: .5, stop() {}, release() {}, resume() { return true; } };
+  };
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('alert');
+  recordings[0].currentTime = 2;
+  await board.beginSimulatorTest();
+  assert.equal(options.initialSpeed, 1);
+  await board.simulatorCommand('attack');
+  assert.equal(recordings.at(-1).currentTime, 1, 'half-speed Test switches to half-speed recorded startup');
+  board.stop();
+});
+
+test('held Test can start at an existing motor speed instead of rest', () => {
+  const { context, voices, options, power, tail } = heldRecordingBackend();
+  const player = startHeldRecording(context, power, tail, { ...options, initialSpeed: .7 });
+  assert.equal(voices[0].started.offset, 2);
+  assert.equal(player.speed, .7);
+  player.stop();
+});
+
+
+test('outgoing recording stays audible through delayed replacement loading and Stop cancels the handoff', async () => {
+  const { board, recordings, nextTick, sandbox } = await soundboard();
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('alert');
+  let resolve;
+  sandbox.getRecordingDetails = () => new Promise(done => { resolve = done; });
+  const switching = board.simulatorCommand('attack');
+  await nextTick();
+  while (!resolve) await nextTick();
+  assert.equal(recordings.length, 1);
+  assert.notEqual(recordings[0].paused, true);
+  assert.equal(board.playing.value.size, 1);
+  board.stop();
+  assert.equal(recordings[0].paused, true);
+  resolve(null);
+  await switching;
+  assert.equal(recordings.length, 1, 'cancelled replacement never starts');
+  assert.equal(board.playing.value.size, 0);
+});
+
+test('rapid recorded mode changes cancel stale loads and crossfade only to the latest signal', async () => {
+  const { board, recordings, nextTick, sandbox } = await soundboard();
+  board.soundMode.value = 'real'; await nextTick();
+  board.openSimulator(sirens[0]);
+  await board.simulatorCommand('alert');
+  let resolve;
+  sandbox.getRecordingDetails = () => new Promise(done => { resolve = done; });
+  const attack = board.simulatorCommand('attack');
+  await nextTick();
+  while (!resolve) await nextTick();
+  sandbox.getRecordingDetails = async () => null;
+  sandbox.findSound = async () => ({ url: './fire.m4a', fileName: 'fire.m4a' });
+  await board.simulatorCommand('fire');
+  resolve(null);
+  await attack;
+  assert.equal(recordings.length, 2);
+  assert.equal(recordings[1].src, './fire.m4a');
+  assert.notEqual(recordings[0].paused, true);
+  assert.notEqual(recordings[1].paused, true);
+  board.stop();
+  assert.ok(recordings.every(audio => audio.paused));
+});
+
+
+test('first Cancel after releasing Test preserves coast for every recorded held-Test model', async () => {
+  const { heldTests } = JSON.parse(await readFile(new URL('../public/sounds/sirens/recordings.json', import.meta.url), 'utf8'));
+  assert.ok(heldTests.some(item => item.sirenId === 'federal-signal-stl-10'));
+  for (const definition of heldTests) {
+    const { board, nextTick, sandbox } = await soundboard();
+    const siren = sirens.find(item => item.id === definition.sirenId);
+    let releases = 0, stops = 0;
+    sandbox.getRecordingCatalog = async () => ({ heldTests: [definition] });
+    sandbox.loadRecordedBuffer = async () => ({ duration: 100 });
+    sandbox.startHeldRecording = () => ({ release() { releases++; }, stop() { stops++; }, resume() { return true; }, speed: 1 });
+    board.soundMode.value = 'real'; await nextTick();
+    board.openSimulator(siren);
+    await board.beginSimulatorTest();
+    board.releaseSimulatorTest(); // pointerup/blur happens before the Cancel click
+    board.stopButton();
+    assert.equal(releases, 1, `${siren.model}: release starts the shutdown once`);
+    assert.equal(stops, 0, `${siren.model}: first Cancel preserves the shutdown`);
+    assert.equal(board.windingDown.value.has(siren.id), true);
+    board.stopButton();
+    assert.equal(stops, 1, `${siren.model}: a second deliberate Cancel stops immediately`);
+    assert.equal(board.playing.value.size, 0);
+  }
+});
+
+test('first Cancel after momentary fake Test preserves its coast and re-power resets Cancel state', async () => {
+  const { board, previews } = await soundboard();
+  const siren = sirens.find(item => item.id === 'federal-signal-stl-10');
+  board.openSimulator(siren);
+  await board.beginSimulatorTest();
+  let hardStops = 0;
+  previews[0].stop = options => { if (options?.immediate) hardStops++; };
+  board.releaseSimulatorTest();
+  board.stopButton();
+  assert.equal(hardStops, 0);
+  assert.equal(board.playing.value.size, 1);
+  await board.beginSimulatorTest();
+  board.stopButton();
+  assert.equal(hardStops, 0);
+  board.stopButton();
+  assert.equal(hardStops, 1);
+  assert.equal(board.playing.value.size, 0);
 });

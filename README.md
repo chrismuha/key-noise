@@ -85,7 +85,7 @@ a Fire / fast-wail recording. Missing combinations retain the add-files message.
 | ACA Allertor 125 | Alert, Test |
 | American Signal T-128 | Alert, Test, Attack (another siren is audible) |
 | Federal Signal 2001-130, Model 5, Model 7, STL-10 | Alert, Test |
-| Federal Signal STH-10A | Alert, Test, Attack (two distant sirens; Sturgis, KY) |
+| Federal Signal STH-10A | Alert, Test, Attack (Siren Archives synthesis) |
 | Federal Signal Thunderbolt 1000 | Alert |
 | Federal Signal Thunderbolt 1000T | Alert, Test, Fire / fast wail |
 | Federal Signal Thunderbolt 1003 | Alert (YouTube field recording) |
@@ -183,9 +183,13 @@ Back or Escape closes the cabinet and promptly stops audio. Changing sound
 source stops old playback. Switching signal modes uses the existing simulated
 rotor, winding smoothly from its current speed into the new pattern when using
 the cabinet buttons. Changing the main soundboard mode dropdown immediately
-stops all sirens. Cabinet Real-file mode changes fade the old recording out
-and the new one in; their wind-up sound is
-part of the supplied recording. Tab navigation remains scoped to cabinet sound buttons while open,
+stops all sirens. Cabinet Real-file mode changes seek a compatible powered position in the new
+recording using native-pitch profiles, with relative-speed matching for sources
+with different peak pitches. Held Test also starts from the current motor speed. Releasing Test starts its
+wind-down; the first explicit Cancel preserves that coast, and a second Cancel
+stops immediately. The outgoing signal stays
+audible while the replacement loads, then the voices crossfade over 150 ms.
+Files without usable pitch profiles retain their normal recorded start. Tab navigation remains scoped to cabinet sound buttons while open,
 and focus returns to the model on closing.
 
 ## Layout and navigation
@@ -386,11 +390,11 @@ No B recordings are bundled. C Pulse is included; custom replacements use
 `federal-signal-sth-10c-pulse.mp3` (WAV, OGG, M4A also supported).
 
 The supplied [Siren Archives video](https://www.youtube.com/watch?v=uly8yG2oBCs)
-provides STH-10C Pulse (14:29–19:05) and STH-10A/C Fire (9:43–14:28),
+provides STH-10A/C Attack (4:43–9:43), Fire (9:43–14:28), and STH-10C Pulse (14:29–19:05),
 with matching shutdown companions and the original long endings. The uploader
 titles this source “All signals synth”; this description is retained in the
 manifest. No reuse license is stated in its metadata, and no copyright-expiration
-claim is made. Existing Alert and Attack recordings remain in use.
+claim is made. The original Alert and Test recordings remain in use.
 
 Mechanical playback profiles are bundled in `public/sounds/sirens/playback-profiles.json`.
 Regenerate them with `python scripts/generate-playback-profiles.py /path/to/ffmpeg`

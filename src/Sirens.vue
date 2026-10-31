@@ -18,7 +18,7 @@ function savedSoundMode() {
 }
 const soundMode = ref(savedSoundMode());
 const allowMultiple = ref(true);
-const sirenMode = ref('attack');
+const sirenMode = ref('alert');
 const modeLabels = { attack: 'Attack', alert: 'Alert', fire: 'Fire', pulse: 'Pulse', test: 'Test / Growl', chime: 'Chime', airhorn: 'Air horn' };
 const recordedModes = ref({});
 const heldTestModels = ref(new Set());
@@ -89,23 +89,47 @@ function finish(id, session) {
   if (sessions.get(id) !== session) return;
   sessions.delete(id);
   if (simulatorSiren.value?.id === id) simulatorActiveMode.value = null;
+  disposeSession(session);
+  playing.value.delete(id);
+  sounding.value.delete(id);
+  windingDown.value.delete(id);
+}
+function disposeSession(session) {
   window.clearTimeout(session.timer);
+  window.clearTimeout(session.transitionTimer);
+  if (session.previous) { disposeSession(session.previous); session.previous = null; }
   session.simulation?.stop({ immediate: true });
   session.heldTest?.stop();
+  if (session.heldTest) session.output?.disconnect();
   clearRecordedCoast(session);
   for (const coast of session.retiringCoasts || []) disposeRecordedCoast(coast);
   if (session.audio) {
     session.audio.onended = null;
     session.audio.onerror = null;
+    session.audio.onloadedmetadata = null;
     session.source?.disconnect();
     session.output?.disconnect();
     session.audio.pause();
     session.audio.removeAttribute('src');
     session.audio.load();
   }
-  playing.value.delete(id);
-  sounding.value.delete(id);
-  windingDown.value.delete(id);
+}
+function completeTransition(session) {
+  const previous = session.previous;
+  if (!previous) return;
+  function fade(voice) {
+    if (voice.previous) fade(voice.previous);
+    for (const output of [voice.output, voice.coast?.output]) {
+      if (!output) continue;
+      output.gain.cancelAndHoldAtTime(context.currentTime);
+      output.gain.linearRampToValueAtTime(0, context.currentTime + .15);
+    }
+  }
+  fade(previous);
+  session.transitionTimer = window.setTimeout(() => {
+    disposeSession(previous);
+    if (session.previous === previous) session.previous = null;
+  }, 180);
 }
 function disposeRecordedCoast(coast) {
   window.clearTimeout(coast.timer);
@@ -144,6 +168,7 @@ function resumeRecording(id, session) {
   if (!session.audio) return false;
   window.clearTimeout(session.timer);
   session.stopping = false;
+  session.testReleased = false;
   windingDown.value.delete(id);
   const coast = session.coast;
   if (coast?.audio && session.recordingDetails?.pitchProfile && session.windDownDetails?.pitchProfile) {
@@ -261,6 +286,32 @@ function closeSimulator() {
   simulatorSiren.value = null;
   status.value = 'Choose a model to play.';
 }
+function recordedState(session) {
+  if (session?.previous && !session.audio && !session.heldTest) return recordedState(session.previous);
+  if (session?.heldTest) return { speed: session.heldTest.speed };
+  if (!session?.audio) return null;
+  const profile = session.coast ? session.windDownDetails?.pitchProfile : session.recordingDetails?.pitchProfile;
+  const time = (session.coast?.audio || session.audio).currentTime || 0;
+  const positive = profile?.filter(point => point[1] > 0) || [];
+  const peak = Math.max(0, ...positive.map(point => point[1]));
+  const point = positive.find(point => point[0] >= time) || positive.at(-1);
+  return { profile, time, speed: peak && point ? Math.min(1, point[1] / peak) : 1 };
+}
+function transitionPosition(state, details) {
+  if (!state) return null;
+  const profile = details?.pitchProfile;
+  const end = details?.windDownStartSeconds ?? Infinity;
+  const exact = matchRecordedPosition(state.profile, state.time, profile, { end });
+  if (exact !== null) return exact;
+  // Different source recordings can have different peak pitches. Preserve relative
+  // motor speed when an absolute-pitch match is unavailable.
+  const powered = profile?.filter(([time, hz]) => time < end && hz > 0);
+  if (powered?.length) {
+    const peak = Math.max(...powered.map(point => point[1]));
+    return matchRecordedPosition([[0, peak * state.speed]], 0, powered, { end });
+  }
+  return null;
+}
 async function simulatorCommand(mode, { held = false } = {}) {
   simulatorTestHeld.value = held;
   const request = ++simulatorCommandRequest;
@@ -268,10 +319,12 @@ async function simulatorCommand(mode, { held = false } = {}) {
   if (!siren) return;
   if (siren.unsupportedModes?.includes(mode)) { status.value = `Pulse requires STH-10C.`; return; }
   const session = sessions.get(siren.id);
-  if (!held && session?.simulation && session.mode !== mode && session.simulation.transitionSignal(mode)) {
+  const transition = recordedState(session);
+  if (session?.simulation && (session.mode !== mode || session.held !== held) && session.simulation.transitionSignal(mode, { held })) {
     session.mode = mode;
-    session.held = false;
+    session.held = held;
     session.stopping = false;
+    session.testReleased = false;
     windingDown.value.delete(simulatorSiren.value?.id);
     window.clearTimeout(session.timer);
     simulatorActiveMode.value = mode;
@@ -279,15 +332,10 @@ async function simulatorCommand(mode, { held = false } = {}) {
     status.value = `${modeLabels[mode]} · transitioning from the current rotor speed.`;
     return;
   }
-  if (!held && session?.audio && session.mode !== mode) {
-    windDown(siren.id, session);
-    await new Promise(resolve => window.setTimeout(resolve, 180));
-    if (request !== simulatorCommandRequest || simulatorSiren.value !== siren || disposed) return;
-  }
   if (!held && session?.mode === mode) {
     const continued = session.simulation
       ? (!session.stopping && !session.held) || session.simulation.resumeSignal()
-      : session.audio && (session.coast || !session.audio.paused);
+      : session.audio && session.output && (session.coast || !session.audio.paused);
     if (continued) {
       session.stopping = false;
       windingDown.value.delete(siren.id);
@@ -301,11 +349,13 @@ async function simulatorCommand(mode, { held = false } = {}) {
       return;
     }
   }
-  stop();
+  const previous = session && !simulated.value ? session : null;
+  if (!previous) stop();
   simulatorActiveMode.value = mode;
+  if (previous && sirenMode.value !== mode) preservedModeChange = mode;
   sirenMode.value = mode;
   await nextTick();
-  if (request === simulatorCommandRequest && simulatorSiren.value === siren && !disposed) await play(siren, { held });
+  if (request === simulatorCommandRequest && simulatorSiren.value === siren && !disposed) await play(siren, { held, transition, previous });
 }
 function beginSimulatorTest() {
   if (simulatorTestHeld.value) return;
@@ -316,22 +366,23 @@ function beginSimulatorTest() {
     simulatorActiveMode.value = 'test';
     session.held = true;
     session.stopping = false;
+    session.testReleased = false;
     windingDown.value.delete(simulatorSiren.value.id);
     status.value = 'Test held · recorded wind-up and steady sustain.';
     return;
   }
-  if (session?.simulation?.resume()) {
+  if (session?.mode === 'test' && session?.simulation?.resume()) {
     simulatorCommandRequest++;
     simulatorTestHeld.value = true;
     simulatorActiveMode.value = 'test';
     session.held = true;
     session.stopping = false;
+    session.testReleased = false;
     windingDown.value.delete(simulatorSiren.value?.id);
     window.clearTimeout(session.timer);
     status.value = 'Test held · powering the current rotor.';
     return;
   }
-  if (session?.audio) finish(simulatorSiren.value.id, session);
   return simulatorCommand('test', { held: true });
 }
 function releaseSimulatorTest() {
@@ -340,7 +391,10 @@ function releaseSimulatorTest() {
   simulatorCommandRequest++;
   const id = simulatorSiren.value?.id;
   const session = sessions.get(id);
-  if (session) windDown(id, session);
+  if (session) {
+    windDown(id, session);
+    session.testReleased = true;
+  }
 }
 const holdGesture = createSirenHold({ onHold: openSimulator, onTap: play });
 function stopButton() {
@@ -348,7 +402,10 @@ function stopButton() {
   simulatorTestHeld.value = false;
   simulatorCommandRequest++;
   for (const [id, session] of sessions) {
-    if (session.stopping) finish(id, session);
+    // Releasing or blurring the momentary Test button already removes power.
+    // The first explicit Cancel must preserve that coast, not count as a second Stop.
+    if (session.stopping && session.testReleased) session.testReleased = false;
+    else if (session.stopping) finish(id, session);
     else windDown(id, session);
   }
   if (!sessions.size) status.value = 'All sirens stopped.';
@@ -362,22 +419,22 @@ async function scan() {
   available.value = new Set(results.filter(Boolean));
   scanning.value = false;
 }
-async function play(siren, { held = false } = {}) {
+async function play(siren, { held = false, transition = null, previous: handoff = null } = {}) {
   if (siren.unsupportedModes?.includes(sirenMode.value)) {
     status.value = `Pulse is available on STH-10C, not ${siren.model}.`;
     return;
   }
   const previous = sessions.get(siren.id);
-  if (previous && previous.stopping && previous.mode !== sirenMode.value) finish(siren.id, previous);
-  else if (previous) {
+  if (previous && previous !== handoff && previous.stopping && previous.mode !== sirenMode.value) finish(siren.id, previous);
+  else if (previous && previous !== handoff) {
     if (previous.stopping) {
       finish(siren.id, previous);
       status.value = 'Stopped.';
     } else windDown(siren.id, previous);
     return;
   }
-  if (!allowMultiple.value) stop();
-  const session = { held, mode: sirenMode.value };
+  if (!allowMultiple.value && !handoff) stop();
+  const session = { held, mode: sirenMode.value, previous: handoff };
   sessions.set(siren.id, session);
   // Include pending requests so a second click or Stop all cancels them too.
   playing.value.add(siren.id);
@@ -427,11 +484,18 @@ async function play(siren, { held = false } = {}) {
           loadRecordedBuffer(context, `./sounds/sirens/${definition.windDownFileName}`)
         ]);
         if (!current()) return;
+        const state = recordedState(session.previous) || transition;
+        session.output = context.createGain();
+        session.output.gain.setValueAtTime(0, context.currentTime);
+        session.output.connect(destination);
         session.heldTest = startHeldRecording(context, power, shutdown, {
           loopStart: definition.loopStartSeconds, loopEnd: definition.loopEndSeconds,
           powerCurve: definition.powerCurve, windDownCurve: definition.windDownCurve,
-          destination, onEnded: () => { if (current()) { finish(siren.id, session); status.value = 'Recorded Test finished.'; } }
+          initialSpeed: state?.speed ?? 0,
+          destination: session.output, onEnded: () => { if (current()) { finish(siren.id, session); status.value = 'Recorded Test finished.'; } }
         });
+        session.output.gain.linearRampToValueAtTime(1, context.currentTime + .15);
+        completeTransition(session);
         sounding.value.add(siren.id);
         status.value = 'Test held · recorded wind-up and steady sustain.';
       } catch { if (current()) { finish(siren.id, session); status.value = 'Could not load the recorded Test wind-up and shutdown.'; } }
@@ -459,6 +523,12 @@ async function play(siren, { held = false } = {}) {
   session.recordingUrl = source.url;
   const audio = new Audio(source.url);
   session.audio = audio;
+  const offset = transitionPosition(recordedState(session.previous) || transition, session.recordingDetails);
+  if (offset !== null) {
+    const seek = () => { if (current()) audio.currentTime = offset; };
+    audio.onloadedmetadata = seek;
+    try { seek(); } catch { /* Retry once metadata is available. */ }
+  }
   audio.volume = 1;
   audio.loop = !session.stopping && ((held && simulatorTestHeld.value) || props.loopSounds);
   audio.onended = () => { if (current() && !session.coast) { finish(siren.id, session); status.value = `${siren.model} finished.`; } };
@@ -475,6 +545,7 @@ async function play(siren, { held = false } = {}) {
     if (!current()) { audio.pause(); return; }
     audio.loop = !session.stopping && ((session.held && simulatorTestHeld.value) || props.loopSounds);
     if (!session.coast) session.output.gain.linearRampToValueAtTime(1, context.currentTime + 0.15);
+    completeTransition(session);
     available.value.add(siren.id);
     sounding.value.add(siren.id);
     if (!session.stopping) status.value = `Playing ${siren.manufacturer} ${siren.model}`;
@@ -507,7 +578,7 @@ watch(sirenMode, (mode) => {
 });
 watch([soundMode, duration], () => { stop(); status.value = 'Choose a model to play.'; });
 watch(soundMode, (value) => {
-  if (value === 'fake' && ['chime', 'airhorn'].includes(sirenMode.value)) sirenMode.value = 'attack';
+  if (value === 'fake' && ['chime', 'airhorn'].includes(sirenMode.value)) sirenMode.value = 'alert';
   try { localStorage.setItem('key-noise-simulated-sirens', value === 'fake' ? 'on' : 'off'); } catch { /* Session setting still works. */ }
 });
 onMounted(() => {
@@ -550,7 +621,7 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
     </div>
     <div class="siren-board">
     <div class="siren-quick-controls">
-      <label class="settings-field"><span>Siren mode</span><select v-model="sirenMode"><option value="attack">Attack</option><option value="alert">Alert</option><option value="fire">Fire</option><option value="pulse">Pulse</option><option value="test">Test / Growl</option><option v-if="!simulated" value="chime">Chime</option><option v-if="!simulated" value="airhorn">Air horn</option></select></label>
+      <label class="settings-field"><span>Siren mode</span><select v-model="sirenMode"><option v-if="!simulated" value="airhorn">Air horn</option><option value="alert">Alert</option><option value="attack">Attack</option><option v-if="!simulated" value="chime">Chime</option><option value="fire">Fire</option><option value="pulse">Pulse</option><option value="test">Test / Growl</option></select></label>
       <label class="settings-field"><span>Sound source</span><select v-model="soundMode"><option value="fake">Fake sounds</option><option value="real">Real sounds</option></select></label>
       <label class="settings-field"><span>Manufacturer</span><select v-model="manufacturer"><option>All manufacturers</option><option v-for="make in manufacturers" :key="make">{{ make }}</option></select></label>
       <label class="multi-sound-option"><input v-model="allowMultiple" type="checkbox" /><span>Play multiple sounds</span></label>
@@ -571,6 +642,5 @@ onBeforeUnmount(() => { disposed = true; holdGesture.dispose(); mobileMedia?.rem
     <button class="stop-siren mobile-only mobile-stop-all" type="button" :disabled="!playing.size" @click="stopButton">{{ windingDown.size ? 'Stop winding down' : 'Stop all sirens' }}</button>
     <p v-if="!filtered.length" class="siren-note">No models match. Try another manufacturer or clear the search.</p>
     </div>
-    <p class="siren-note mobile-settings-content">Includes 59 audio recordings for 33 catalog entries; most support Alert and Test / Growl. Pulse is a rare signal; STH-10C includes a Pulse excerpt from the supplied video. <a href="./sounds/sirens/CREDITS.html" target="_blank" rel="noopener">Recording credits and available modes</a>. Add files to <code>public/sounds/sirens/</code> using the mode-specific filenames shown on the buttons (for example, model-attack.mp3, model-pulse.mp3, or model-test.mp3). Attack mode also accepts the original model.mp3 filename. MP3, WAV, OGG, and M4A are supported. This catalog covers selected current and historical models; it is not an exhaustive list.</p>
   </section>
 </template>
