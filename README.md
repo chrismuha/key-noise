@@ -162,8 +162,9 @@ off while the rotor coasts. Clicking that same signal again during coast-down
 reuses the existing rotor and its current speed. It accelerates back to the
 next full-speed part of the remaining sequence instead of starting from rest
 or resetting the whole sequence in Fake mode. Real signals use their recorded
-shutdown at the original pitch and speed; re-pressing returns to the paused
-original signal. Fixed recordings cannot reproduce every intermediate rotor
+shutdown at the original pitch and speed; re-pressing selects a compatible
+measured pitch position for analyzed mechanical recordings, or returns to the
+paused original position if a reliable match is unavailable. Fixed recordings cannot reproduce every intermediate rotor
 speed, and no synthesized coast is added in Real mode.
 
 **Test is hold-to-run** in the cabinet: mouse/touch or Space/Enter powers the
@@ -175,8 +176,8 @@ A short hold produces a lower growl. Releasing overrides Loop. Pointer cancel,
 focus/window loss, or page hiding also releases Test. Real Test uses 18 dedicated startup/sustain assets with the author’s WAV loop
 markers. Startup plays once; holding loops only the steady section, with no
 wind-down or automatic cutoff. Release plays the actual recorded shutdown at
-its original rate. A partial re-press selects a nearby matching position in the
-recorded startup before returning to sustain; matching is approximate.
+its original rate. A partial release or re-press interpolates the measured curves to select a
+matching recorded position before continuing; matching remains approximate.
 
 Back or Escape closes the cabinet and promptly stops audio. Changing sound
 source stops old playback. Switching signal modes uses the existing simulated
@@ -299,8 +300,8 @@ cabinet’s Test/Alert/Attack/Fire power buttons still resume a coasting siren.
 
 Real **held Test** uses only its recorded startup, steady sustain, and shutdown. It never loops a complete test blast or stretches/synthesizes its
 shutdown. All 18 bundled models with Test recordings have recorded power assets.
-A model without authored hold-to-run assets shows an unavailable message instead
-of repeatedly winding down while Test is held. Normal Test taps still play the
+In the simulator, Test is dimmed and disabled for models without authored
+hold-to-run assets. Normal Test taps still play the
 complete recorded test blast. Fake Test and its existing timings are unchanged.
 
 ## In-app Help
@@ -310,6 +311,9 @@ Reported issues, and Controls & tips. The button hides with the header controls.
 The dialog includes searchable notes for every siren, actual bundled mode
 coverage, held-Test support, source limitations, and audio credits. Reported
 fixes are distinguished from remaining limitations; this is not a live tracker.
+Controls & tips explains unavailable Real buttons, matched Cancel/resume, held-Test
+interpolation, STH-10A/B/C coverage, and Pulse playback. Read Me displays the latest
+change-list entry and expandable earlier release notes.
 Use the section tabs (or section dropdown in narrower windows) to navigate,
 and Escape or the header close button to close.
 

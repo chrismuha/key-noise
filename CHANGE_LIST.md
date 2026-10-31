@@ -6,6 +6,9 @@
   and resume, using original audio at unchanged playback rate. Decline uncertain
   matches and preserve the existing recorded fallback.
 - Interpolate held-Test startup/shutdown curve positions between measurements.
+- Update Help’s Controls & tips user guide for Cancel/resume, disabled Real
+  buttons, held-Test support, STH-10A/B/C coverage, and Pulse. Align the README
+  with the current controls; Read Me displays these release notes automatically.
 - Disable unavailable Real simulator commands and unsupported held Test.
 - Correct Help’s recorded-model count to include shared A/C coverage and describe
   remaining recording limitations. Bundle reproducible playback-profile analysis.
