@@ -1,0 +1,33 @@
+{
+  "appName": "Key Noise",
+  "knownIssues": [
+    {
+      "title": "Wind-downs won\u2019t always match a physical siren",
+      "description": "Real sounds use only recorded audio, including on Cancel. A short crossfade joins the signal to its recorded shutdown at the original pitch and speed. For analyzed mechanical recordings, Cancel chooses a shutdown position with a matching measured pitch. Resume matches back to the signal. Uncertain or missing matches use the normal recorded transition. Field noise, volume differences, and fixed recordings can still prevent an exact physical match. If a recording is already winding down, it continues from there. Without a playable shutdown file, the original recording finishes naturally with Loop turned off. Tap Stop again for immediate silence."
+    },
+    {
+      "title": "Some panel buttons have no real sound file",
+      "description": "A model may have Alert but no Attack, Fire, Pulse, or Test recording. The yellow control panel does not mean every mode is available. Unavailable Real panel controls are dimmed and disabled. Missing soundboard modes show an add-files or unavailable message; they never substitute fake audio. Pulse is a rare signal; an STH-10C Pulse excerpt is bundled. Check each model\u2019s available modes before choosing one."
+    },
+    {
+      "title": "Real and fake controls behave differently",
+      "description": "Real signals loop their recorded powered section until stopped; the startup plays once and the recorded shutdown waits for Stop or Cancel. Fake signals also continue their steady tone or repeating pattern until stopped. Re-powering analyzed mechanical recordings selects a compatible recorded pitch when a reliable match is available; other recordings return to the paused position. Held Real Test needs dedicated startup, sustain, and shutdown assets. It interpolates the measured startup and shutdown curves when released or pressed again; a model with a Test tap recording may still lack held-Test support."
+    },
+    {
+      "title": "Background noise, variants, and regional patterns",
+      "description": "Wind, traffic, clipping, and other sirens can be audible. Some files represent a particular variant or family, not every configuration. H\u00f6rmann HLS 273 uses German Warning / All-clear patterns mapped to Attack / Alert. A Fire / fast-wail recording does not imply every model\u2019s historic Fire signal. The catalog is a selection of models, not an exhaustive library. New recordings are added only to matching model/mode combinations."
+    },
+    {
+      "title": "Keyboard and mouse work immediately",
+      "description": "Keyboard and Mouse use built-in sounds with no source dropdown or audio files to add. Custom keyboard pads use your uploaded audio when supplied, or a built-in sound otherwise. The Real/Fake selector applies only to Sirens. Tap a pad for its normal sound, or hold a pad, mapped key, or mouse button to sustain it until release. Up to three sounds can play together. Additional presses are ignored until you release a sound. A press starts one smoothly faded voice, so there is no tap-to-hold restart or volume jump."
+    }
+  ],
+  "comingSoon": [],
+  "usageTips": [
+    {
+      "title": "User guide and release notes",
+      "description": "Keep using this app\u2019s existing guide and release notes for feature instructions and version history."
+    }
+  ],
+  "troubleshooting": []
+}

@@ -1,0 +1,12 @@
+import { createApp, h, ref } from 'vue';
+import SuiteHelp from './SuiteHelp.vue';
+import packageInfo from '../package.json';
+import details from './content.json';
+const container=document.createElement('div');
+container.className='shared-suite-help';
+container.style.cssText='position:fixed;right:16px;bottom:max(16px, env(safe-area-inset-bottom));z-index:1000';
+document.body.append(container);
+const theme=ref(document.documentElement.dataset.theme==='light'?'light':'dark');
+const observer=new MutationObserver(()=>{theme.value=document.documentElement.dataset.theme==='light'?'light':'dark';});
+observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+createApp({render:()=>h(SuiteHelp,{...details,version:packageInfo.version,theme:theme.value,comingSoon:details.comingSoon})}).mount(container);
