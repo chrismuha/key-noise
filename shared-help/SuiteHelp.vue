@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, useId } from 'vue';
 const props = defineProps({
+  placement: { type: String, default: 'inline' },
   appName: { type: String, required: true },
   version: { type: String, required: true },
   theme: { type: String, default: 'dark', validator: value => ['dark', 'light'].includes(value) },
@@ -23,7 +24,7 @@ const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURICompo
 </script>
 
 <template>
-  <button type="button" class="suite-help-trigger" :data-theme="theme" aria-haspopup="dialog" @click="panel.showModal()"><span aria-hidden="true">?</span> Help</button>
+  <button type="button" class="suite-help-trigger" :data-theme="theme" :data-placement="placement" aria-haspopup="dialog" @click="panel.showModal()"><span aria-hidden="true">?</span> Help</button>
   <Teleport to="body">
     <dialog ref="panel" @keydown.stop @keydown.esc.prevent="panel.close()" class="suite-help-panel" :data-theme="theme" :aria-labelledby="titleId">
       <header>
@@ -166,4 +167,8 @@ const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURICompo
   .suite-help-panel .suite-contact-card { grid-template-columns: 40px minmax(0, 1fr) 18px; gap: 12px; padding: 16px; }
   .suite-contact-icon { width: 40px; height: 40px; border-radius: 12px; }
 }
+
+/* A compact edge tab keeps Help reachable without covering bottom actions. */
+.suite-help-trigger[data-placement="edge"] { position:fixed;right:0;top:40%;bottom:auto;z-index:1000;min-width:44px;min-height:64px;width:44px;padding:8px 4px;border-radius:10px 0 0 10px;writing-mode:vertical-rl;gap:5px;font:600 13px/1.2 Arial,sans-serif;box-shadow:0 2px 10px #0003; }
+.suite-help-trigger[data-placement="edge"]:hover,.suite-help-trigger[data-placement="edge"]:focus-visible {width:50px;}
 </style>

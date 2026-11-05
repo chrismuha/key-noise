@@ -9,4 +9,4 @@ document.body.append(container);
 const theme=ref(document.documentElement.dataset.theme==='light'?'light':'dark');
 const observer=new MutationObserver(()=>{theme.value=document.documentElement.dataset.theme==='light'?'light':'dark';});
 observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-createApp({render:()=>h(SuiteHelp,{...details,version:packageInfo.version,theme:theme.value,comingSoon:details.comingSoon})}).mount(container);
+createApp({render:()=>h(SuiteHelp,{...details,placement:'edge',version:packageInfo.version,theme:theme.value,comingSoon:details.comingSoon})}).mount(container);

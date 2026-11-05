@@ -1,5 +1,10 @@
 # key-noise Change List
 
+## November 4, 2026 — Help access
+
+- Moved floating Help access to a compact right-edge tab above the bottom controls. Existing inline Help buttons remain available.
+- Updated the shared Help access guide while preserving Contact us, Report an issue, Known issues, Coming soon, and Tips & troubleshooting.
+
 ## October 31, 2026 — Continuous Siren Signals
 
 - Keep Alert, Attack, Fire, Pulse, and latched Test running until stopped.
