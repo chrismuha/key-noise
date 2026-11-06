@@ -374,3 +374,16 @@ Regenerate them with `python scripts/generate-playback-profiles.py /path/to/ffmp
 (requires NumPy). No audio files are modified. Held Test interpolates its authored
 speed curves. Real simulator buttons are disabled when their matching recording
 is unavailable; held Test requires dedicated power assets.
+
+## Foldable preview profiles
+
+In the development preview, choose a named device from Device:
+
+| Device | Open (CSS pixels) | Closed (CSS pixels) |
+| --- | --- | --- |
+| iPhone Duo | 890 × 626 | 466 × 678 |
+| Galaxy Z Fold7 | 750 × 832 | 412 × 960 |
+
+Rotate swaps the selected width and height. These are display-sized CSS test presets; browser controls and display settings can change the usable page viewport. The iPhone Duo opens in landscape. Selecting a preset resizes the preview only; it does not rearrange application content.
+
+Dimensions: [Apple iPhone Duo specifications](https://www.apple.com/iphone-duo/specs/) (display pixels divided by 3), [Galaxy Z Fold7 open measurement](https://www.effectiveviewport.com/devices/samsung-galaxy-z-fold7-unfolded/), and [Galaxy Z Fold7 closed measurement](https://www.effectiveviewport.com/devices/samsung-galaxy-z-fold7-folded/).

@@ -808,3 +808,7 @@
 
 - Match ProfitPulse’s macOS icon dimensions and placement before and after launch.
 - Keep source artwork separate so repeated builds do not accumulate padding.
+
+## 2026-11-06: foldable preview profiles
+
+- Foldable preview presets now use iPhone Duo sizes: 890 × 626 CSS pixels open and 466 × 678 closed. Separate Galaxy Z Fold7 presets provide 750 × 832 open and 412 × 960 closed. These replace the generic foldable presets; application layouts and controls are unchanged.
