@@ -5,7 +5,7 @@
   "description": "Desktop keyboard sound app built with Electron.",
   "main": "main.js",
   "scripts": {
-    "clean": "node -e \"const fs=require('fs'); for (const p of ['dist','release','out']) fs.rmSync(p,{recursive:true,force:true}); fs.mkdirSync('release',{recursive:true}); fs.writeFileSync('release/.gitkeep','\\n')\"",
+    "clean": "node ./scripts/clean-build-output.cjs dist release out",
     "prestart": "node ./scripts/repair-if-present.cjs",
     "start": "node ./scripts/run-shared-if-present.cjs ../_shared/vite-electron-dev.mjs --port 5199",
     "start:fixed": "concurrently \"npm run dev:renderer\" \"cross-env NODE_DISABLE_COMPILE_CACHE=1 VITE_DEV_SERVER_URL=http://127.0.0.1:5199/ npm run dev:main\"",
@@ -47,7 +47,14 @@
     "dev:offline": "cross-env NODE_DISABLE_COMPILE_CACHE=1 MCR_STARTUP_MODE=offline NODE_ENV=development node ./scripts/dev-main-wrapper.cjs --offline",
     "dev:web": "cross-env NODE_DISABLE_COMPILE_CACHE=1 vite dev --host 127.0.0.1 --port 5199 --strictPort --open /dev-preview.html",
     "dev:mobile:web": "npm run dev:web",
-    "test": "node --test scripts/sirens.test.mjs scripts/sound-focus.test.mjs"
+    "test": "node --test scripts/sirens.test.mjs scripts/sound-focus.test.mjs",
+    "prebuild:web": "node ./scripts/prepare-build-output.cjs",
+    "predist:mac:x64": "node ./scripts/prepare-build-output.cjs",
+    "predist:mac:arm64": "node ./scripts/prepare-build-output.cjs",
+    "predist:mac:universal": "node ./scripts/prepare-build-output.cjs",
+    "predist:win": "node ./scripts/prepare-build-output.cjs",
+    "predist:linux": "node ./scripts/prepare-build-output.cjs",
+    "postclean": "node ./scripts/prepare-build-output.cjs"
   },
   "keywords": [],
   "author": {
@@ -139,5 +146,10 @@
     "brace-expansion@2": "2.1.7",
     "brace-expansion@5": "5.0.12",
     "js-yaml@4": "4.3.2"
-  }
+  },
+  "mcrBuildOutputs": [
+    "dist",
+    "release",
+    "out"
+  ]
 }
