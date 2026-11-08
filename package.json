@@ -114,7 +114,7 @@
     "cross-env": "^10.1.0",
     "electron": "^44.10.0",
     "electron-builder": "^26.18.0",
-    "vite": "^8.3.5",
+    "vite": "^8.3.6",
     "wait-on": "^9.5.1"
   },
   "overrides": {
