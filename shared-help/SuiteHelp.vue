@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, useId } from 'vue';
+import { computed, nextTick, ref, useId } from 'vue';
 const props = defineProps({
   placement: { type: String, default: 'inline' },
   appName: { type: String, required: true },
@@ -10,6 +10,7 @@ const props = defineProps({
   phone: { type: String, default: '+1 (315) 338-1919' },
   website: { type: String, default: 'https://muhacomputer.com/' },
   knownIssues: { type: Array, default: () => [] },
+  fixedIssues: { type: Array, default: () => [] },
   comingSoon: { type: Array, default: () => [] },
   usageTips: { type: Array, default: () => [] },
   troubleshooting: { type: Array, default: () => [] },
@@ -18,6 +19,11 @@ const titleId = `suite-help-${useId()}`;
 const telephoneUrl = computed(() => `tel:${props.phone.replace(/[^+0-9]/g, '')}`);
 const panel = ref(null);
 const page = ref('contact');
+const content = ref(null);
+function selectPage(id) {
+  page.value = id;
+  nextTick(() => { if (content.value) content.value.scrollTop = 0; });
+}
 const sections = [ ['contact', 'Contact us'], ['report', 'Report an issue'], ['known', 'Known issues'], ['coming', 'Coming soon'], ['tips', 'Tips & troubleshooting'] ];
 const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURIComponent(`${props.appName} ${props.version} issue report`)}&body=${encodeURIComponent(`${props.appName} version: ${props.version}\nDevice and operating system:\nWorkspace or screen:\nSteps to reproduce:\n1. \nExpected result:\nActual result or exact error:\nHow often it happens:\n\nPlease remove customer, financial, and other private information from screenshots or attachments.`)}`);
 
@@ -32,9 +38,9 @@ const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURICompo
         <button type="button" class="suite-help-close" autofocus aria-label="Close Help" @click="panel.close()">Close</button>
       </header>
       <nav aria-label="Help sections">
-        <button v-for="[id, label] in sections" :key="id" type="button" :aria-current="page === id ? 'page' : undefined" @click="page = id">{{ label }}</button>
+        <button v-for="[id, label] in sections" :key="id" type="button" :aria-current="page === id ? 'page' : undefined" @click="selectPage(id)">{{ label }}</button>
       </nav>
-      <main>
+      <main ref="content">
         <section v-if="page === 'contact'">
           <h2>Contact us</h2><p>{{ company }}</p>
           <div class="suite-help-links">
@@ -66,7 +72,17 @@ const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURICompo
           <h2>Known issues</h2><p>Confirmed problems documented for this version appear here.</p>
           <article v-for="(issue, index) in knownIssues" :key="index"><h3>{{ issue.title }}</h3><p>{{ issue.description }}</p></article>
           <p v-if="!knownIssues.length">No confirmed issues are currently listed in this version’s Help. If you encounter a problem, use Report an issue.</p>
-          <p>Use Report an issue to share a problem you encounter.</p>
+          <h2 class="suite-help-fixed-heading">Fixed</h2>
+          <p>Completed fixes and what they mean for you.</p>
+          <article v-for="(issue, index) in fixedIssues" :key="`fixed-${index}`">
+            <h3>{{ issue.title }}</h3>
+            <p v-if="issue.version">Fixed in version {{ issue.version }}</p>
+            <p>{{ issue.description }}</p>
+            <p><strong>How we fixed it:</strong> {{ issue.resolution }}</p>
+            <p v-if="issue.userNotes"><strong>What this means for you:</strong> {{ issue.userNotes }}</p>
+          </article>
+          <p v-if="!fixedIssues.length">No completed fixes are currently listed here. See Release Notes for the full change history.</p>
+          <p>Use Bug Report to share a problem you encounter.</p>
         </section>
         <section v-else-if="page === 'coming'">
           <h2>Coming soon</h2><p>Planned features are not available yet.</p>
@@ -81,6 +97,9 @@ const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURICompo
           <p>If the problem continues, use Report an issue and include the exact error and steps.</p>
         </section>
       </main>
+      <footer class="suite-help-footer">
+        <button type="button" class="suite-help-bug-report" @click="selectPage('report')"><span aria-hidden="true">🐛</span> Bug Report</button>
+      </footer>
     </dialog>
   </Teleport>
 </template>
@@ -171,4 +190,12 @@ const reportUrl = computed(() => `mailto:${props.email}?subject=${encodeURICompo
 /* A compact edge tab keeps Help reachable without covering bottom actions. */
 .suite-help-trigger[data-placement="edge"] { position:fixed;right:0;top:40%;bottom:auto;z-index:1000;min-width:44px;min-height:64px;width:44px;padding:8px 4px;border-radius:10px 0 0 10px;writing-mode:vertical-rl;gap:5px;font:600 13px/1.2 Arial,sans-serif;box-shadow:0 2px 10px #0003; }
 .suite-help-trigger[data-placement="edge"]:hover,.suite-help-trigger[data-placement="edge"]:focus-visible {width:50px;}
+
+/* Keep reporting available without covering the Help content. */
+.suite-help-panel header, .suite-help-panel nav, .suite-help-footer { flex-shrink: 0; }
+.suite-help-footer { display: flex; justify-content: flex-end; padding: 10px 24px; padding-bottom: max(10px, env(safe-area-inset-bottom)); border-top: 1px solid var(--input-border); }
+.suite-help-panel .suite-help-bug-report { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; }
+.suite-help-panel .suite-help-bug-report:hover { background: var(--muted-bg); }
+.suite-help-panel .suite-help-fixed-heading { margin-top: 32px; }
+
 </style>
